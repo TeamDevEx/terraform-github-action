@@ -4,5 +4,11 @@ const fs = require("fs");
 
 // terraform.plan('../terraform/sample-bucket.tf')
 
-fs.writeFileSync("./sample.txt", "qwdqwdqwd");
-console.log(fs.readFileSync("./sample.txt"));
+const sampleObject = {
+  something: "Hello World",
+};
+
+fs.writeFileSync("./sample.json", JSON.stringify(sampleObject));
+
+const sampleRead = fs.readFileSync("./sample.txt");
+console.log(JSON.stringify(sampleRead));
