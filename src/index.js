@@ -14,4 +14,10 @@ const terraformDirPath = getInput("terraform_dir_path");
 //     path: terraformDirPath
 // })
 
-terraform.init(terraformDirPath);
+const run = async () => {
+  await terraform.init(terraformDirPath);
+  const planResponse = await terraform.plan(terraformDirPath);
+  console.log(planResponse)
+};
+
+run()
