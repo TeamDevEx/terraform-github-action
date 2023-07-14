@@ -1,0 +1,14 @@
+{
+  "name": "terraform-github-action",
+  "version": "1.0.0",
+  "description": "A github action that runs terraform apply and terraform plan on a given path for .tf files",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Geodor Ruales",
+  "license": "ISC",
+  "dependencies": {
+    "js-terraform": "^0.0.1"
+  }
+}
