@@ -10,6 +10,7 @@ const {
 const { getInput } = require("@actions/core");
 const github = require("@actions/github");
 const fs = require("fs");
+const { logger } = require("./util/logger");
 
 const terraformDirPath = getInput("terraform_dir_path", { required: true });
 const bucketName = "terraform-config-states";
@@ -27,15 +28,15 @@ const createResourcesProcess = async (
   fs.cpSync(terraformDirPath, repoName, { recursive: true });
 
   const isFolderEmptyInBucket = await isFolderEmpty(bucketName, repoName);
-  console.log(isFolderEmptyInBucket)
+  logger(`isFolderEmptyInBucket: ${isFolderEmptyInBucket}`)
   const whatFolderToUse = isFolderEmptyInBucket ? repoName : "old-state";
 
-  if (isFolderEmptyInBucket) await terraform.init(repoName);
+  await terraform.init(whatFolderToUse);
   const planResponse = await terraform.plan(whatFolderToUse, {
     autoApprove: true,
   });
 
-  console.log(planResponse);
+  logger(planResponse);
 
   const applyResponse = await terraform.apply(whatFolderToUse, {
     autoApprove: true,
@@ -43,7 +44,7 @@ const createResourcesProcess = async (
 
   await uploadDirectory(bucketName, repoName);
 
-  console.log(applyResponse);
+  logger(applyResponse);
 };
 
 const run = async () => {
@@ -53,7 +54,7 @@ const run = async () => {
   //   const destroyResponse = await terraform.destroy(terraformDirPath, {
   //     autoApprove: true,
   //   });
-  //   console.log(destroyResponse);
+  //   logger(destroyResponse);
 };
 
 run();

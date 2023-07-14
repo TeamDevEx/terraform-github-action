@@ -1,4 +1,5 @@
-const { Storage, TransferManager } = require("@google-cloud/storage");
+const { Storage } = require("@google-cloud/storage");
+const spinner = require("cli-spinners");
 
 // Creates a client
 const storage = new Storage();
@@ -6,6 +7,7 @@ const storage = new Storage();
 const { promisify } = require("util");
 const fs = require("fs");
 const path = require("path");
+const { logger } = require("../util/logger");
 
 const readdir = promisify(fs.readdir);
 const stat = promisify(fs.stat);
@@ -26,6 +28,7 @@ async function* getFiles(directory = ".") {
 }
 
 async function uploadDirectory(bucketName, directoryPath) {
+  logger(`Uploading tf config state to cloud storge bucket`, spinner);
   const bucket = storage.bucket(bucketName);
   let successfulUploads = 0;
 
@@ -36,19 +39,18 @@ async function uploadDirectory(bucketName, directoryPath) {
 
       await bucket.upload(filePath, { destination });
 
-      console.log(`Successfully uploaded: ${filePath}`);
+      logger(`Successfully uploaded: ${filePath}`);
       successfulUploads++;
     } catch (e) {
       console.error(`Error uploading ${filePath}:`, e);
     }
   }
 
-  console.log(
-    `${successfulUploads} files uploaded to ${bucketName} successfully.`
-  );
+  logger(`${successfulUploads} files uploaded to ${bucketName} successfully.`);
 }
 
 async function doesBucketExist(bucketName) {
+  logger(`Checking if bucket exists`, spinner);
   const [buckets] = await storage.getBuckets();
 
   const isThereExistingBucket = buckets.find((bucket) => {
@@ -59,15 +61,20 @@ async function doesBucketExist(bucketName) {
 }
 
 async function createBucket(bucketName) {
+  logger(`Creating bucket: ${bucketName}`, spinner);
   const [bucket] = await storage.createBucket(bucketName, {
     location: "US",
     storageClass: "STANDARD",
   });
 
-  console.log(`Bucket ${bucket.name} created.`);
+  logger(`Bucket ${bucket.name} created.`);
 }
 
 async function downloadFolder(bucketName, folderName) {
+  logger(
+    `Downloading folder for tf config states for this repository: ${folderName}`,
+    spinner
+  );
   const [files] = await storage
     .bucket(bucketName)
     .getFiles({ prefix: folderName });
@@ -77,7 +84,7 @@ async function downloadFolder(bucketName, folderName) {
     dirPath[0] = "old-state";
 
     const newDirPath = dirPath.join("/");
-    const newFilePath = path.join(newDirPath, path.basename(file.name));
+    const newFilePath = newDirPath + "/" + path.basename(file.name);
 
     if (!fs.existsSync(newDirPath))
       fs.mkdirSync(newDirPath, { recursive: true });
@@ -88,11 +95,12 @@ async function downloadFolder(bucketName, folderName) {
       .download({
         destination: path.join(newFilePath),
       });
-    console.log(`gs://${bucketName}/${file.name} downloaded to ${file.name}.`);
+    logger(`gs://${bucketName}/${file.name} downloaded to ${newFilePath}.`);
   });
 }
 
 const isFolderEmpty = async (bucketName, folderName) => {
+  logger(`Checking if folder is empty`, spinner);
   const [files] = await storage
     .bucket(bucketName)
     .getFiles({ prefix: folderName });
