@@ -7005,12 +7005,12 @@ module.exports.PROCESSING_OPTIONS = PROCESSING_OPTIONS;
 /***/ 9866:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-module.exports = __nccwpck_require__(6113);
+module.exports = __nccwpck_require__(3908);
 
 
 /***/ }),
 
-/***/ 6113:
+/***/ 3908:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
@@ -7405,7 +7405,7 @@ Object.defineProperty(exports, "__esModule", ({
 }));
 exports["default"] = void 0;
 
-var _crypto = _interopRequireDefault(__nccwpck_require__(3663));
+var _crypto = _interopRequireDefault(__nccwpck_require__(6113));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -7517,7 +7517,7 @@ Object.defineProperty(exports, "__esModule", ({
 }));
 exports["default"] = rng;
 
-var _crypto = _interopRequireDefault(__nccwpck_require__(3663));
+var _crypto = _interopRequireDefault(__nccwpck_require__(6113));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -7548,7 +7548,7 @@ Object.defineProperty(exports, "__esModule", ({
 }));
 exports["default"] = void 0;
 
-var _crypto = _interopRequireDefault(__nccwpck_require__(3663));
+var _crypto = _interopRequireDefault(__nccwpck_require__(6113));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -9955,6 +9955,91 @@ function wrappy (fn, cb) {
 
 /***/ }),
 
+/***/ 1179:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const { Storage } = __nccwpck_require__(3961);
+
+// Creates a client
+const storage = new Storage();
+
+const { promisify } = __nccwpck_require__(3837);
+const fs = __nccwpck_require__(7147);
+const path = __nccwpck_require__(1017);
+
+const readdir = promisify(fs.readdir);
+const stat = promisify(fs.stat);
+
+async function* getFiles(directory = ".") {
+  for (const file of await readdir(directory)) {
+    const fullPath = path.join(directory, file);
+    const stats = await stat(fullPath);
+
+    if (stats.isDirectory()) {
+      yield* getFiles(fullPath);
+    }
+
+    if (stats.isFile()) {
+      yield fullPath;
+    }
+  }
+}
+
+async function uploadDirectory({ bucketName, directoryPath }) {
+  const bucket = storage.bucket(bucketName);
+  let successfulUploads = 0;
+
+  for await (const filePath of getFiles(directoryPath)) {
+    try {
+      const dirname = path.dirname(directoryPath);
+      const destination = path.relative(dirname, filePath);
+
+      await bucket.upload(filePath, { destination });
+
+      console.log(`Successfully uploaded: ${filePath}`);
+      successfulUploads++;
+    } catch (e) {
+      console.error(`Error uploading ${filePath}:`, e);
+    }
+  }
+
+  console.log(
+    `${successfulUploads} files uploaded to ${bucketName} successfully.`
+  );
+}
+
+async function doesBucketExist({ bucketName }) {
+  const [buckets] = await storage.getBuckets();
+
+  const isThereExistingBucket = buckets.find((bucket) => {
+    return bucketName === bucket.name;
+  });
+
+  return !!isThereExistingBucket;
+}
+
+async function createBucket(bucketName) {
+  const [bucket] = await storage.createBucket(bucketName, {
+    location: "US",
+    storageClass: "STANDARD",
+  });
+
+  console.log(`Bucket ${bucket.name} created.`);
+}
+
+module.exports = { uploadDirectory, doesBucketExist, createBucket };
+
+
+/***/ }),
+
+/***/ 3961:
+/***/ ((module) => {
+
+module.exports = eval("require")("@google-cloud/storage");
+
+
+/***/ }),
+
 /***/ 7557:
 /***/ ((module) => {
 
@@ -9979,7 +10064,7 @@ module.exports = require("child_process");
 
 /***/ }),
 
-/***/ 3663:
+/***/ 6113:
 /***/ ((module) => {
 
 "use strict";
@@ -10142,21 +10227,18 @@ var __webpack_exports__ = {};
 (() => {
 const { Terraform } = __nccwpck_require__(6502);
 const terraform = new Terraform();
-const github = __nccwpck_require__(8408);
+const {
+  uploadDirectory,
+  doesBucketExist,
+  createBucket,
+} = __nccwpck_require__(1179);
 const { getInput } = __nccwpck_require__(3722);
+const github = __nccwpck_require__(8408);
 
-// const octokit = github.getOctokit();
-// const owner = github.context.repo.owner
-// const repo = github.context.repo.repo
 const terraformDirPath = getInput("terraform_dir_path", { required: true });
+const bucketName = "terraform-config-state-" + github.context.repo.repo;
 
-// const terraformFile = octokit.rest.repos.getContent({
-//     owner,
-//     repo,
-//     path: terraformDirPath
-// })
-
-const run = async () => {
+const createResourcesProcess = async (terraformDirPath) => {
   await terraform.init(terraformDirPath);
   const planResponse = await terraform.plan(terraformDirPath, {
     autoApprove: true,
@@ -10168,14 +10250,19 @@ const run = async () => {
     autoApprove: true,
   });
 
+  if (!(await doesBucketExist(bucketName))) await createBucket(bucketName)
+
+  await uploadDirectory(bucketName)
+
   console.log(applyResponse);
+};
 
-//   const destroyResponse = await terraform.destroy(terraformDirPath, {
-//     autoApprove: true,
-//   });
-
-//   console.log(destroyResponse);
-  
+const run = async () => {
+  await createResourcesProcess(terraformDirPath);
+  //   const destroyResponse = await terraform.destroy(terraformDirPath, {
+  //     autoApprove: true,
+  //   });
+  //   console.log(destroyResponse);
 };
 
 run();

@@ -1,20 +1,17 @@
 const { Terraform } = require("js-terraform");
 const terraform = new Terraform();
-const github = require("@actions/github");
+const {
+  uploadDirectory,
+  doesBucketExist,
+  createBucket,
+} = require("./gcloud/storage");
 const { getInput } = require("@actions/core");
+const github = require("@actions/github");
 
-// const octokit = github.getOctokit();
-// const owner = github.context.repo.owner
-// const repo = github.context.repo.repo
 const terraformDirPath = getInput("terraform_dir_path", { required: true });
+const bucketName = "terraform-config-state-" + github.context.repo.repo;
 
-// const terraformFile = octokit.rest.repos.getContent({
-//     owner,
-//     repo,
-//     path: terraformDirPath
-// })
-
-const run = async () => {
+const createResourcesProcess = async (terraformDirPath) => {
   await terraform.init(terraformDirPath);
   const planResponse = await terraform.plan(terraformDirPath, {
     autoApprove: true,
@@ -26,14 +23,19 @@ const run = async () => {
     autoApprove: true,
   });
 
+  if (!(await doesBucketExist(bucketName))) await createBucket(bucketName)
+
+  await uploadDirectory(bucketName)
+
   console.log(applyResponse);
+};
 
-//   const destroyResponse = await terraform.destroy(terraformDirPath, {
-//     autoApprove: true,
-//   });
-
-//   console.log(destroyResponse);
-  
+const run = async () => {
+  await createResourcesProcess(terraformDirPath);
+  //   const destroyResponse = await terraform.destroy(terraformDirPath, {
+  //     autoApprove: true,
+  //   });
+  //   console.log(destroyResponse);
 };
 
 run();
