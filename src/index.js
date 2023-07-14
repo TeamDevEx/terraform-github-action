@@ -23,9 +23,9 @@ const createResourcesProcess = async (terraformDirPath, bucketName) => {
     autoApprove: true,
   });
 
-  if (!(await doesBucketExist(bucketName))) await createBucket(bucketName)
+  if (!(await doesBucketExist(bucketName))) await createBucket(bucketName);
 
-  await uploadDirectory(bucketName, terraformDirPath)
+  await uploadDirectory(bucketName, terraformDirPath);
 
   console.log(applyResponse);
 };

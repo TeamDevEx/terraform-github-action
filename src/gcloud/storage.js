@@ -25,7 +25,7 @@ async function* getFiles(directory = ".") {
   }
 }
 
-async function uploadDirectory({ bucketName, directoryPath }) {
+async function uploadDirectory(bucketName, directoryPath) {
   const bucket = storage.bucket(bucketName);
   let successfulUploads = 0;
 
