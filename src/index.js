@@ -1,5 +1,5 @@
-const { Terraform } = require("js-terraform");
-const terraform = new Terraform();
+// const { Terraform } = require("js-terraform");
+// const terraform = new Terraform();
 const fs = require("fs");
 
 // terraform.plan('../terraform/sample-bucket.tf')
