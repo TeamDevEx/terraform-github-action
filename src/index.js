@@ -1,14 +1,17 @@
-// const { Terraform } = require("js-terraform");
-// const terraform = new Terraform();
-const fs = require("fs");
+const { Terraform } = require("js-terraform");
+const terraform = new Terraform();
+const github = require("@actions/github");
+const {getInput} = require('@actions/core')
 
-// terraform.plan('../terraform/sample-bucket.tf')
+const octokit = github.getOctokit();
+// const owner = github.context.repo.owner
+// const repo = github.context.repo.repo
+const terraformDirPath = getInput('terraform_dir_path')
 
-const sampleObject = {
-  something: "Hello World",
-};
+// const terraformFile = octokit.rest.repos.getContent({
+//     owner,
+//     repo,
+//     path: terraformDirPath 
+// })
 
-fs.writeFileSync("./sample.json", JSON.stringify(sampleObject));
-
-const sampleRead = fs.readFileSync("./sample.json", "utf-8");
-console.log(JSON.stringify(sampleRead));
+terraform.init(terraformDirPath);

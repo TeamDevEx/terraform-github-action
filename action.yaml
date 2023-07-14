@@ -1,5 +1,8 @@
-name: 'Hello World'
-description: 'Greet someone and record the time'
+name: 'Terraform GitHub Action'
+description: 'Runs terraform init, plan, and apply to the terraform directory passed'
+inputs:
+  terraform_dir_path:
+    description: 'Directory of the terraform configuration files'
 runs:
   using: 'node16'
   main: 'src/index.js'
