@@ -1,4 +1,4 @@
-const { Storage } = require("@google-cloud/storage");
+const { Storage, TransferManager } = require("@google-cloud/storage");
 
 // Creates a client
 const storage = new Storage();
@@ -67,4 +67,16 @@ async function createBucket(bucketName) {
   console.log(`Bucket ${bucket.name} created.`);
 }
 
-module.exports = { uploadDirectory, doesBucketExist, createBucket };
+async function downloadFolder(bucketName, folderName) {
+  const transferManager = new TransferManager(storage.bucket(bucketName));
+  await transferManager.downloadManyFiles(folderName);
+
+  console.log(`gs://${bucketName}/${folderName} downloaded to ${folderName}.`);
+}
+
+module.exports = {
+  uploadDirectory,
+  doesBucketExist,
+  createBucket,
+  downloadFolder,
+};

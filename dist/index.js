@@ -75988,7 +75988,7 @@ module.exports = Queue;
 /***/ 1179:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-const { Storage } = __nccwpck_require__(1430);
+const { Storage, TransferManager } = __nccwpck_require__(1430);
 
 // Creates a client
 const storage = new Storage();
@@ -76057,7 +76057,19 @@ async function createBucket(bucketName) {
   console.log(`Bucket ${bucket.name} created.`);
 }
 
-module.exports = { uploadDirectory, doesBucketExist, createBucket };
+async function downloadFolder(bucketName, folderName) {
+  const transferManager = new TransferManager(storage.bucket(bucketName));
+  await transferManager.downloadManyFiles(folderName);
+
+  console.log(`gs://${bucketName}/${folderName} downloaded to ${folderName}.`);
+}
+
+module.exports = {
+  uploadDirectory,
+  doesBucketExist,
+  createBucket,
+  downloadFolder,
+};
 
 
 /***/ }),
@@ -76480,6 +76492,7 @@ const {
   uploadDirectory,
   doesBucketExist,
   createBucket,
+  downloadFolder,
 } = __nccwpck_require__(1179);
 const { getInput } = __nccwpck_require__(3722);
 const github = __nccwpck_require__(8408);
@@ -76488,29 +76501,38 @@ const fs = __nccwpck_require__(7147);
 const terraformDirPath = getInput("terraform_dir_path", { required: true });
 const bucketName = "terraform-config-states";
 
-fs.cpSync(terraformDirPath, github.context.repo.repo, { recursive: true });
+const createResourcesProcess = async (
+  bucketName,
+  terraformDirPath,
+  { repoName }
+) => {
+  await downloadFolder(repoName);
 
-const createResourcesProcess = async (bucketName, terraformDirPath) => {
-  await terraform.init(terraformDirPath);
-  const planResponse = await terraform.plan(terraformDirPath, {
+  fs.cpSync(repoName, "old-state", { recursive: true });
+  fs.cpSync(terraformDirPath, repoName, { recursive: true });
+
+  await terraform.init(repoName);
+  const planResponse = await terraform.plan("old-state", {
     autoApprove: true,
   });
 
   console.log(planResponse);
 
-  const applyResponse = await terraform.apply(terraformDirPath, {
+  const applyResponse = await terraform.apply("old-state", {
     autoApprove: true,
   });
 
   if (!(await doesBucketExist(bucketName))) await createBucket(bucketName);
 
-  await uploadDirectory(bucketName, terraformDirPath);
+  await uploadDirectory(bucketName, repoName);
 
   console.log(applyResponse);
 };
 
 const run = async () => {
-  await createResourcesProcess(bucketName, github.context.repo.repo);
+  await createResourcesProcess(bucketName, terraformDirPath, {
+    repoName: github.context.repo.repo,
+  });
   //   const destroyResponse = await terraform.destroy(terraformDirPath, {
   //     autoApprove: true,
   //   });
