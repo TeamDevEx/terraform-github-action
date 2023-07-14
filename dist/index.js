@@ -10145,7 +10145,7 @@ const terraform = new Terraform();
 const github = __nccwpck_require__(8408);
 const { getInput } = __nccwpck_require__(3722);
 
-const octokit = github.getOctokit();
+// const octokit = github.getOctokit();
 // const owner = github.context.repo.owner
 // const repo = github.context.repo.repo
 const terraformDirPath = getInput("terraform_dir_path");
