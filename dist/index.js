@@ -76015,7 +76015,7 @@ async function* getFiles(directory = ".") {
   }
 }
 
-async function uploadDirectory({ bucketName, directoryPath }) {
+async function uploadDirectory(bucketName, directoryPath) {
   const bucket = storage.bucket(bucketName);
   let successfulUploads = 0;
 
@@ -76038,7 +76038,7 @@ async function uploadDirectory({ bucketName, directoryPath }) {
   );
 }
 
-async function doesBucketExist({ bucketName }) {
+async function doesBucketExist(bucketName) {
   const [buckets] = await storage.getBuckets();
 
   const isThereExistingBucket = buckets.find((bucket) => {
@@ -76487,7 +76487,7 @@ const github = __nccwpck_require__(8408);
 const terraformDirPath = getInput("terraform_dir_path", { required: true });
 const bucketName = "terraform-config-state-" + github.context.repo.repo;
 
-const createResourcesProcess = async (terraformDirPath, bucketName) => {
+const createResourcesProcess = async (bucketName, terraformDirPath) => {
   await terraform.init(terraformDirPath);
   const planResponse = await terraform.plan(terraformDirPath, {
     autoApprove: true,
@@ -76499,15 +76499,15 @@ const createResourcesProcess = async (terraformDirPath, bucketName) => {
     autoApprove: true,
   });
 
-  if (!(await doesBucketExist(bucketName))) await createBucket(bucketName)
+  if (!(await doesBucketExist(bucketName))) await createBucket(bucketName);
 
-  await uploadDirectory(bucketName, terraformDirPath)
+  await uploadDirectory(bucketName, terraformDirPath);
 
   console.log(applyResponse);
 };
 
 const run = async () => {
-  await createResourcesProcess(terraformDirPath, bucketName);
+  await createResourcesProcess(bucketName, terraformDirPath);
   //   const destroyResponse = await terraform.destroy(terraformDirPath, {
   //     autoApprove: true,
   //   });
