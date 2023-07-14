@@ -10,5 +10,5 @@ const sampleObject = {
 
 fs.writeFileSync("./sample.json", JSON.stringify(sampleObject));
 
-const sampleRead = fs.readFileSync("./sample.txt");
+const sampleRead = fs.readFileSync("./sample.json");
 console.log(JSON.stringify(sampleRead));
