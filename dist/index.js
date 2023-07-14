@@ -10148,7 +10148,7 @@ const { getInput } = __nccwpck_require__(3722);
 // const octokit = github.getOctokit();
 // const owner = github.context.repo.owner
 // const repo = github.context.repo.repo
-const terraformDirPath = getInput("terraform_dir_path");
+const terraformDirPath = getInput("terraform_dir_path", { required: true });
 
 // const terraformFile = octokit.rest.repos.getContent({
 //     owner,
@@ -10158,11 +10158,28 @@ const terraformDirPath = getInput("terraform_dir_path");
 
 const run = async () => {
   await terraform.init(terraformDirPath);
-  const planResponse = await terraform.plan(terraformDirPath);
-  console.log(planResponse)
+  const planResponse = await terraform.plan(terraformDirPath, {
+    autoApprove: true,
+  });
+
+  console.log(planResponse);
+
+  const applyResponse = await terraform.apply(terraformDirPath, {
+    autoApprove: true,
+  });
+
+  console.log(applyResponse);
+
+//   const destroyResponse = await terraform.destroy(terraformDirPath, {
+//     autoApprove: true,
+//   });
+
+//   console.log(destroyResponse);
+  
 };
 
-run()
+run();
+
 })();
 
 module.exports = __webpack_exports__;
