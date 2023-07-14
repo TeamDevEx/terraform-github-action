@@ -11,7 +11,7 @@ const github = require("@actions/github");
 const terraformDirPath = getInput("terraform_dir_path", { required: true });
 const bucketName = "terraform-config-state-" + github.context.repo.repo;
 
-const createResourcesProcess = async (terraformDirPath, bucketName) => {
+const createResourcesProcess = async (bucketName, terraformDirPath) => {
   await terraform.init(terraformDirPath);
   const planResponse = await terraform.plan(terraformDirPath, {
     autoApprove: true,
@@ -31,7 +31,7 @@ const createResourcesProcess = async (terraformDirPath, bucketName) => {
 };
 
 const run = async () => {
-  await createResourcesProcess(terraformDirPath, bucketName);
+  await createResourcesProcess(bucketName, terraformDirPath);
   //   const destroyResponse = await terraform.destroy(terraformDirPath, {
   //     autoApprove: true,
   //   });

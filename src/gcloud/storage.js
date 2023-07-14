@@ -48,7 +48,7 @@ async function uploadDirectory(bucketName, directoryPath) {
   );
 }
 
-async function doesBucketExist({ bucketName }) {
+async function doesBucketExist(bucketName) {
   const [buckets] = await storage.getBuckets();
 
   const isThereExistingBucket = buckets.find((bucket) => {
