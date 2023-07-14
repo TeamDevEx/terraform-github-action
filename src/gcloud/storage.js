@@ -89,7 +89,7 @@ async function downloadFolder(bucketName, folderName) {
   });
 }
 
-const isBucketEmpty = async (bucketName, folderName) => {
+const isFolderEmpty = async (bucketName, folderName) => {
   const [files] = await storage
     .bucket(bucketName)
     .getFiles({ prefix: folderName });
@@ -104,5 +104,5 @@ module.exports = {
   doesBucketExist,
   createBucket,
   downloadFolder,
-  isBucketEmpty,
+  isFolderEmpty,
 };

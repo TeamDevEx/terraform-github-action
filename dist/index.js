@@ -76079,7 +76079,7 @@ async function downloadFolder(bucketName, folderName) {
   });
 }
 
-const isBucketEmpty = async (bucketName, folderName) => {
+const isFolderEmpty = async (bucketName, folderName) => {
   const [files] = await storage
     .bucket(bucketName)
     .getFiles({ prefix: folderName });
@@ -76094,7 +76094,7 @@ module.exports = {
   doesBucketExist,
   createBucket,
   downloadFolder,
-  isBucketEmpty,
+  isFolderEmpty,
 };
 
 
@@ -76519,7 +76519,7 @@ const {
   doesBucketExist,
   createBucket,
   downloadFolder,
-  isBucketEmpty,
+  isFolderEmpty,
 } = __nccwpck_require__(1179);
 const { getInput } = __nccwpck_require__(3722);
 const github = __nccwpck_require__(8408);
@@ -76540,7 +76540,7 @@ const createResourcesProcess = async (
 
   fs.cpSync(terraformDirPath, repoName, { recursive: true });
 
-  if (await isBucketEmpty(bucketName, repoName)) await terraform.init(repoName);
+  if (await isFolderEmpty(bucketName, repoName)) await terraform.init(repoName);
   const planResponse = await terraform.plan("old-state", {
     autoApprove: true,
   });

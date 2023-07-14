@@ -5,7 +5,7 @@ const {
   doesBucketExist,
   createBucket,
   downloadFolder,
-  isBucketEmpty,
+  isFolderEmpty,
 } = require("./gcloud/storage");
 const { getInput } = require("@actions/core");
 const github = require("@actions/github");
@@ -26,7 +26,7 @@ const createResourcesProcess = async (
 
   fs.cpSync(terraformDirPath, repoName, { recursive: true });
 
-  if (await isBucketEmpty(bucketName, repoName)) await terraform.init(repoName);
+  if (await isFolderEmpty(bucketName, repoName)) await terraform.init(repoName);
   const planResponse = await terraform.plan("old-state", {
     autoApprove: true,
   });
