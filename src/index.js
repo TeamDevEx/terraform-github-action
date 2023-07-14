@@ -26,14 +26,17 @@ const createResourcesProcess = async (
 
   fs.cpSync(terraformDirPath, repoName, { recursive: true });
 
-  if (await isFolderEmpty(bucketName, repoName)) await terraform.init(repoName);
-  const planResponse = await terraform.plan("old-state", {
+  const isFolderEmptyInBucket = await isFolderEmpty(bucketName, repoName);
+  const whatFolderToUse = isFolderEmptyInBucket ? repoName : "old-state";
+
+  if (isFolderEmptyInBucket) await terraform.init(repoName);
+  const planResponse = await terraform.plan(whatFolderToUse, {
     autoApprove: true,
   });
 
   console.log(planResponse);
 
-  const applyResponse = await terraform.apply("old-state", {
+  const applyResponse = await terraform.apply(whatFolderToUse, {
     autoApprove: true,
   });
 
