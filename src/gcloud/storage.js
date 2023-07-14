@@ -68,15 +68,41 @@ async function createBucket(bucketName) {
 }
 
 async function downloadFolder(bucketName, folderName) {
-  const transferManager = new TransferManager(storage.bucket(bucketName));
-  await transferManager.downloadManyFiles(folderName);
+  const [files] = await storage
+    .bucket(bucketName)
+    .getFiles({ prefix: folderName });
 
-  console.log(`gs://${bucketName}/${folderName} downloaded to ${folderName}.`);
+  files.forEach(async (file) => {
+    if (!fs.existsSync(path.parse(file.name).dir))
+      fs.mkdirSync(path.parse(file.name).dir, { recursive: true });
+
+    const dirPath = path.parse(file.name).dir.split("/");
+    dirPath[0] = "old-state";
+
+    await storage
+      .bucket(bucketName)
+      .file(file.name)
+      .download({
+        destination: path.join(dirPath.join("/"), path.basename(file.name)),
+      });
+    console.log(`gs://${bucketName}/${file.name} downloaded to ${file.name}.`);
+  });
 }
+
+const isBucketEmpty = async (bucketName, folderName) => {
+  const [files] = await storage
+    .bucket(bucketName)
+    .getFiles({ prefix: folderName });
+
+  if (files.length === 0) return true;
+
+  return false;
+};
 
 module.exports = {
   uploadDirectory,
   doesBucketExist,
   createBucket,
   downloadFolder,
+  isBucketEmpty,
 };

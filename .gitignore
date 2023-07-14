@@ -1,1 +1,4 @@
 node_modules
+terraform
+old-state
+sample-repo-to-use-gh-action
