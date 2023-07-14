@@ -10143,17 +10143,17 @@ var __webpack_exports__ = {};
 const { Terraform } = __nccwpck_require__(6502);
 const terraform = new Terraform();
 const github = __nccwpck_require__(8408);
-const {getInput} = __nccwpck_require__(3722)
+const { getInput } = __nccwpck_require__(3722);
 
 const octokit = github.getOctokit();
 // const owner = github.context.repo.owner
 // const repo = github.context.repo.repo
-const terraformDirPath = getInput('terraform_dir_path')
+const terraformDirPath = getInput("terraform_dir_path");
 
 // const terraformFile = octokit.rest.repos.getContent({
 //     owner,
 //     repo,
-//     path: terraformDirPath 
+//     path: terraformDirPath
 // })
 
 terraform.init(terraformDirPath);
