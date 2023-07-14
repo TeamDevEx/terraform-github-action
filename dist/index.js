@@ -76015,14 +76015,13 @@ async function* getFiles(directory = ".") {
   }
 }
 
-async function uploadDirectory(bucketName, directoryPath) {
+async function uploadDirectory(bucketName, directoryPath, { repoName }) {
   const bucket = storage.bucket(bucketName);
   let successfulUploads = 0;
 
   for await (const filePath of getFiles(directoryPath)) {
     try {
-      const dirname = path.dirname(directoryPath);
-      const destination = path.relative(dirname, filePath);
+      const destination = path.relative(repoName, filePath);
 
       await bucket.upload(filePath, { destination });
 
@@ -76485,7 +76484,7 @@ const { getInput } = __nccwpck_require__(3722);
 const github = __nccwpck_require__(8408);
 
 const terraformDirPath = getInput("terraform_dir_path", { required: true });
-const bucketName = "terraform-config-state-" + github.context.repo.repo;
+const bucketName = "terraform-config-states";
 
 const createResourcesProcess = async (bucketName, terraformDirPath) => {
   await terraform.init(terraformDirPath);
@@ -76501,7 +76500,9 @@ const createResourcesProcess = async (bucketName, terraformDirPath) => {
 
   if (!(await doesBucketExist(bucketName))) await createBucket(bucketName);
 
-  await uploadDirectory(bucketName, terraformDirPath);
+  await uploadDirectory(bucketName, terraformDirPath, {
+    repoName: github.context.repo.repo,
+  });
 
   console.log(applyResponse);
 };

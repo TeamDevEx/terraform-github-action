@@ -9,7 +9,7 @@ const { getInput } = require("@actions/core");
 const github = require("@actions/github");
 
 const terraformDirPath = getInput("terraform_dir_path", { required: true });
-const bucketName = "terraform-config-state-" + github.context.repo.repo;
+const bucketName = "terraform-config-states";
 
 const createResourcesProcess = async (bucketName, terraformDirPath) => {
   await terraform.init(terraformDirPath);
@@ -25,7 +25,9 @@ const createResourcesProcess = async (bucketName, terraformDirPath) => {
 
   if (!(await doesBucketExist(bucketName))) await createBucket(bucketName);
 
-  await uploadDirectory(bucketName, terraformDirPath);
+  await uploadDirectory(bucketName, terraformDirPath, {
+    repoName: github.context.repo.repo,
+  });
 
   console.log(applyResponse);
 };
