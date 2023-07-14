@@ -1,5 +1,4 @@
 const { Storage } = require("@google-cloud/storage");
-const spinner = require("cli-spinners");
 
 // Creates a client
 const storage = new Storage();
@@ -28,7 +27,7 @@ async function* getFiles(directory = ".") {
 }
 
 async function uploadDirectory(bucketName, directoryPath) {
-  logger(`Uploading tf config state to cloud storge bucket`, spinner);
+  logger(`Uploading tf config state to cloud storge bucket`);
   const bucket = storage.bucket(bucketName);
   let successfulUploads = 0;
 
@@ -50,7 +49,7 @@ async function uploadDirectory(bucketName, directoryPath) {
 }
 
 async function doesBucketExist(bucketName) {
-  logger(`Checking if bucket exists`, spinner);
+  logger(`Checking if bucket exists`);
   const [buckets] = await storage.getBuckets();
 
   const isThereExistingBucket = buckets.find((bucket) => {
@@ -61,7 +60,7 @@ async function doesBucketExist(bucketName) {
 }
 
 async function createBucket(bucketName) {
-  logger(`Creating bucket: ${bucketName}`, spinner);
+  logger(`Creating bucket: ${bucketName}`);
   const [bucket] = await storage.createBucket(bucketName, {
     location: "US",
     storageClass: "STANDARD",
@@ -72,8 +71,7 @@ async function createBucket(bucketName) {
 
 async function downloadFolder(bucketName, folderName) {
   logger(
-    `Downloading folder for tf config states for this repository: ${folderName}`,
-    spinner
+    `Downloading folder for tf config states for this repository: ${folderName}`
   );
   const [files] = await storage
     .bucket(bucketName)
@@ -100,7 +98,7 @@ async function downloadFolder(bucketName, folderName) {
 }
 
 const isFolderEmpty = async (bucketName, folderName) => {
-  logger(`Checking if folder is empty`, spinner);
+  logger(`Checking if folder is empty`);
   const [files] = await storage
     .bucket(bucketName)
     .getFiles({ prefix: folderName });

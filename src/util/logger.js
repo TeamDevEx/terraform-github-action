@@ -1,8 +1,6 @@
-const logger = (log, spinner) => {
+const logger = (log) => {
   console.log(
-    `${new Date().toISOString()} --- ${JSON.stringify({ log }, null, 2)} ${
-      spinner?.dots || ""
-    }`
+    `${new Date().toISOString()} --- ${JSON.stringify({ log }, null, 2)}`
   );
 };
 
