@@ -76487,7 +76487,7 @@ const github = __nccwpck_require__(8408);
 const terraformDirPath = getInput("terraform_dir_path", { required: true });
 const bucketName = "terraform-config-state-" + github.context.repo.repo;
 
-const createResourcesProcess = async (terraformDirPath) => {
+const createResourcesProcess = async (terraformDirPath, bucketName) => {
   await terraform.init(terraformDirPath);
   const planResponse = await terraform.plan(terraformDirPath, {
     autoApprove: true,
@@ -76501,13 +76501,13 @@ const createResourcesProcess = async (terraformDirPath) => {
 
   if (!(await doesBucketExist(bucketName))) await createBucket(bucketName)
 
-  await uploadDirectory(bucketName)
+  await uploadDirectory(bucketName, terraformDirPath)
 
   console.log(applyResponse);
 };
 
 const run = async () => {
-  await createResourcesProcess(terraformDirPath);
+  await createResourcesProcess(terraformDirPath, bucketName);
   //   const destroyResponse = await terraform.destroy(terraformDirPath, {
   //     autoApprove: true,
   //   });
