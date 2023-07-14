@@ -76063,17 +76063,20 @@ async function downloadFolder(bucketName, folderName) {
     .getFiles({ prefix: folderName });
 
   files.forEach(async (file) => {
-    if (!fs.existsSync(path.parse(file.name).dir))
-      fs.mkdirSync(path.parse(file.name).dir, { recursive: true });
-
     const dirPath = path.parse(file.name).dir.split("/");
     dirPath[0] = "old-state";
+
+    const newDirPath = dirPath.join("/");
+    const newFilePath = path.join(newDirPath, path.basename(file.name));
+
+    if (!fs.existsSync(newDirPath))
+      fs.mkdirSync(newDirPath, { recursive: true });
 
     await storage
       .bucket(bucketName)
       .file(file.name)
       .download({
-        destination: path.join(dirPath.join("/"), path.basename(file.name)),
+        destination: path.join(newFilePath),
       });
     console.log(`gs://${bucketName}/${file.name} downloaded to ${file.name}.`);
   });
