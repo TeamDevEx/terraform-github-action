@@ -18,7 +18,7 @@ const createResourcesProcess = async (
   terraformDirPath,
   { repoName }
 ) => {
-  await downloadFolder(repoName);
+  await downloadFolder(bucketName, repoName);
 
   fs.cpSync(repoName, "old-state", { recursive: true });
   fs.cpSync(terraformDirPath, repoName, { recursive: true });
