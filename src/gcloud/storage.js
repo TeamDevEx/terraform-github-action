@@ -25,13 +25,14 @@ async function* getFiles(directory = ".") {
   }
 }
 
-async function uploadDirectory(bucketName, directoryPath, { repoName }) {
+async function uploadDirectory(bucketName, directoryPath) {
   const bucket = storage.bucket(bucketName);
   let successfulUploads = 0;
 
   for await (const filePath of getFiles(directoryPath)) {
     try {
-      const destination = path.relative(repoName, filePath);
+      const dirName = path.dirname(directoryPath);
+      const destination = path.relative(dirName, filePath);
 
       await bucket.upload(filePath, { destination });
 

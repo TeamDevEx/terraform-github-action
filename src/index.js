@@ -7,9 +7,12 @@ const {
 } = require("./gcloud/storage");
 const { getInput } = require("@actions/core");
 const github = require("@actions/github");
+const fs = require("fs");
 
 const terraformDirPath = getInput("terraform_dir_path", { required: true });
 const bucketName = "terraform-config-states";
+
+fs.cpSync(terraformDirPath, github.context.repo.repo, { recursive: true });
 
 const createResourcesProcess = async (bucketName, terraformDirPath) => {
   await terraform.init(terraformDirPath);
@@ -25,15 +28,13 @@ const createResourcesProcess = async (bucketName, terraformDirPath) => {
 
   if (!(await doesBucketExist(bucketName))) await createBucket(bucketName);
 
-  await uploadDirectory(bucketName, terraformDirPath, {
-    repoName: github.context.repo.repo,
-  });
+  await uploadDirectory(bucketName, terraformDirPath);
 
   console.log(applyResponse);
 };
 
 const run = async () => {
-  await createResourcesProcess(bucketName, terraformDirPath);
+  await createResourcesProcess(bucketName, github.context.repo.repo);
   //   const destroyResponse = await terraform.destroy(terraformDirPath, {
   //     autoApprove: true,
   //   });
