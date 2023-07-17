@@ -6,7 +6,7 @@ const { getInput } = require("@actions/core");
 const github = require("@actions/github");
 
 const terraformDirPath = getInput("terraform_dir_path", { required: true });
-const toDestroy = getInput("destroy", { required: true });
+const toDestroy = getInput("destroy");
 const repoName = github.context.repo.repo;
 
 const { terraform: terraformClient, storage: cloudStorageClient } =
