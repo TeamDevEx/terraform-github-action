@@ -76086,7 +76086,7 @@ const destroyProcess = async (
 
   logger(`does old-state exists?: ${fs.existsSync(oldStateFolder)}`);
 
-  await allowAccessToExecutable(oldStateFolder);
+  if (!isOldStateEmpty) await allowAccessToExecutable(oldStateFolder);
 
   const initResponse = await terraformClient.init(whatFolderToUse);
   console.log(initResponse);
@@ -76100,13 +76100,13 @@ const destroyProcess = async (
     autoApprove: true,
   });
 
-  logger('deleting resources')
+  logger("deleting resources");
   await deleteDirectory(cloudStorageClient, {
     bucketName,
     folderName: repoName,
   });
 
-  logger('resources deleted!')
+  logger("resources deleted!");
 };
 
 module.exports = { destroyProcess };
