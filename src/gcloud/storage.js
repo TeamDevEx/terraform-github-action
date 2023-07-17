@@ -46,7 +46,7 @@ async function uploadDirectory(
   logger(`${successfulUploads} files uploaded to ${bucketName} successfully.`);
 }
 
-async function doesBucketExist(bucketName) {
+async function doesBucketExist(cloudStorageClient, { bucketName }) {
   logger(`Checking if bucket exists`);
   const [buckets] = await cloudStorageClient.getBuckets();
 
@@ -57,7 +57,7 @@ async function doesBucketExist(bucketName) {
   return !!isThereExistingBucket;
 }
 
-async function createBucket(bucketName) {
+async function createBucket(cloudStorageClient, { bucketName }) {
   logger(`Creating bucket: ${bucketName}`);
   const [bucket] = await cloudStorageClient.createBucket(bucketName, {
     location: "US",
