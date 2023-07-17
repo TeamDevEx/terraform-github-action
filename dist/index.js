@@ -71143,6 +71143,7 @@ const { execSync } = __nccwpck_require__(2081);
 const { getFiles } = __nccwpck_require__(3445);
 
 const getProviderToUse = async () => {
+    let providerToUse
     let architecture = process.arch.split("");
     let machineArchitectures = [];
   
@@ -71161,9 +71162,13 @@ const getProviderToUse = async () => {
       }
     }
   
-    return machineArchitectures.find((machine) =>
+    providerToUse =  machineArchitectures.find((machine) =>
       machine.includes(architecture.join(""))
     );
+
+    console.log(providerToUse)
+
+    return providerToUse
   };
 
 // allows access to the terraform provider executable file
