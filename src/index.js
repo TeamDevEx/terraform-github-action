@@ -13,20 +13,21 @@ const { terraform: terraformClient, storage: cloudStorageClient } =
   loadClients();
 
 const run = async () => {
-  if (toDestroy)
+  if (toDestroy) {
     await destroyProcess(cloudStorageClient, terraformClient, {
       bucketName: BUCKET_NAME,
       oldStateFolder: OLD_STATE_FOLDER,
       terraformDirPath,
       repoName,
     });
-
-  await createResourcesProcess(cloudStorageClient, terraformClient, {
-    bucketName: BUCKET_NAME,
-    oldStateFolder: OLD_STATE_FOLDER,
-    terraformDirPath,
-    repoName,
-  });
+  } else {
+    await createResourcesProcess(cloudStorageClient, terraformClient, {
+      bucketName: BUCKET_NAME,
+      oldStateFolder: OLD_STATE_FOLDER,
+      terraformDirPath,
+      repoName,
+    });
+  }
 };
 
 run();
