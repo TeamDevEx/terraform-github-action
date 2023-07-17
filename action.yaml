@@ -4,7 +4,7 @@ inputs:
   terraform_dir_path:
     description: 'Directory of the terraform configuration files'
     required: true
-  destroy:
+  to_destroy:
     description: 'Type true to destroy already made resources'
 runs:
   using: 'node16'
