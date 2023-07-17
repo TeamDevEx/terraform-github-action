@@ -1,69 +1,20 @@
-const { Terraform } = require("js-terraform");
-const terraform = new Terraform();
+const { terraform: terraformClient, storage: cloudStorageClient } =
+  loadClients();
+const { createResourcesProcess } = require("./proceses/createResourcesProcess");
 const {
-  uploadDirectory,
-  doesBucketExist,
-  createBucket,
-  downloadFolder,
-} = require("./gcloud/storage");
-const { isEmptyDir } = require("./util/fsProcesses");
-const { getInput } = require("@actions/core");
-const github = require("@actions/github");
-const fs = require("fs");
-const path = require("path");
-const { logger } = require("./util/logger");
-
-const terraformDirPath = getInput("terraform_dir_path", { required: true });
-const bucketName = "terraform-config-states";
-const oldStateFolder = "old-state";
-
-const createResourcesProcess = async (
-  bucketName,
+  BUCKET_NAME,
+  OLD_STATE_FOLDER,
   terraformDirPath,
-  { repoName }
-) => {
-  if (!(await doesBucketExist(bucketName))) await createBucket(bucketName);
-  if (!fs.existsSync(repoName)) fs.mkdirSync(repoName);
-  if (!fs.existsSync(oldStateFolder)) fs.mkdirSync(oldStateFolder);
-
-  await downloadFolder(bucketName, repoName);
-
-  fs.cpSync(terraformDirPath, repoName, { recursive: true });
-
-  const isOldStateEmpty = await isEmptyDir(oldStateFolder);
-  logger(`isOldStateEmpty: ${isOldStateEmpty}`);
-  const whatFolderToUse = isOldStateEmpty ? repoName : oldStateFolder;
-
-  const absolutePathForTerraformProcesses = path.join(
-    __dirname,
-    whatFolderToUse
-  );
-
-  await terraform.init(absolutePathForTerraformProcesses);
-  const planResponse = await terraform.plan(absolutePathForTerraformProcesses, {
-    autoApprove: true,
-  });
-
-  logger(planResponse);
-
-  const applyResponse = await terraform.apply(
-    absolutePathForTerraformProcesses,
-    {
-      autoApprove: true,
-    }
-  );
-
-  if (!isOldStateEmpty)
-    fs.cpSync(oldStateFolder, repoName, { recursive: true });
-
-  await uploadDirectory(bucketName, repoName);
-
-  logger(applyResponse);
-};
+  repoName,
+} = require("./constant");
+// const terraformDirPath = getInput("terraform_dir_path", { required: true });
 
 const run = async () => {
-  await createResourcesProcess(bucketName, terraformDirPath, {
-    repoName: github.context.repo.repo,
+  await createResourcesProcess(cloudStorageClient, terraformClient, {
+    bucketName: BUCKET_NAME,
+    oldStateFolder: OLD_STATE_FOLDER,
+    terraformDirPath,
+    repoName,
   });
   //   const destroyResponse = await terraform.destroy(terraformDirPath, {
   //     autoApprove: true,
