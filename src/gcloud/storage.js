@@ -97,21 +97,28 @@ async function downloadFolder(bucketName, folderName) {
   });
 }
 
-const isFolderEmpty = async (bucketName, folderName) => {
-  logger(`Checking if folder is empty`);
-  const [files] = await storage
-    .bucket(bucketName)
-    .getFiles({ prefix: folderName });
+async function deleteDirectory(cloudStorageClient, { bucketName, folderName }) {
+  logger(`Deleting tf config state to cloud storge bucket`);
+  const bucketInstance = cloudStorageClient.bucket(bucketName);
+
+  const [files] = await bucketInstance.getFiles();
+
+  const dirFiles = files.filter((f) =>
+    f.metadata.id.includes(folderName + "/")
+  );
 
   if (files.length === 0) return true;
 
-  return false;
-};
+  for (const dirFile of dirFiles) {
+    await dirFile.delete();
+    logger(`deleted ${dirFile.name}`);
+  }
+}
 
 module.exports = {
   uploadDirectory,
   doesBucketExist,
   createBucket,
   downloadFolder,
-  isFolderEmpty,
+  deleteDirectory,
 };
