@@ -9,6 +9,7 @@ const { logger } = require("../util/logger");
 const { allowAccessToExecutable } = require("../util/chmod");
 
 const destroyProcess = async (
+  cloudStorageClient,
   terraformClient,
   { repoName, terraformDirPath, bucketName, oldStateFolder }
 ) => {

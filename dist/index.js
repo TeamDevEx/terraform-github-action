@@ -76066,6 +76066,7 @@ const { logger } = __nccwpck_require__(5928);
 const { allowAccessToExecutable } = __nccwpck_require__(5549);
 
 const destroyProcess = async (
+  cloudStorageClient,
   terraformClient,
   { repoName, terraformDirPath, bucketName, oldStateFolder }
 ) => {
