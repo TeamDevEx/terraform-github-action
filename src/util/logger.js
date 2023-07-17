@@ -1,7 +1,5 @@
 const logger = (log) => {
-  console.log(
-    `${new Date().toISOString()} --- ${JSON.stringify({ log }, null, 2)}`
-  );
+  console.log(`${new Date().toISOString()} --- ${log}`);
 };
 
 module.exports = { logger };

@@ -76100,12 +76100,13 @@ const destroyProcess = async (
     autoApprove: true,
   });
 
-  const deleteResponse = await deleteDirectory(cloudStorageClient, {
+  logger('deleting resources')
+  await deleteDirectory(cloudStorageClient, {
     bucketName,
     folderName: repoName,
   });
 
-  console.log(deleteResponse);
+  logger('resources deleted!')
 };
 
 module.exports = { destroyProcess };
@@ -76217,9 +76218,7 @@ module.exports = { getFiles };
 /***/ ((module) => {
 
 const logger = (log) => {
-  console.log(
-    `${new Date().toISOString()} --- ${JSON.stringify({ log }, null, 2)}`
-  );
+  console.log(`${new Date().toISOString()} --- ${log}`);
 };
 
 module.exports = { logger };

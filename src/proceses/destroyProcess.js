@@ -43,12 +43,13 @@ const destroyProcess = async (
     autoApprove: true,
   });
 
-  const deleteResponse = await deleteDirectory(cloudStorageClient, {
+  logger('deleting resources')
+  await deleteDirectory(cloudStorageClient, {
     bucketName,
     folderName: repoName,
   });
 
-  console.log(deleteResponse);
+  logger('resources deleted!')
 };
 
 module.exports = { destroyProcess };
