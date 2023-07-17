@@ -70930,28 +70930,10 @@ module.exports = { BUCKET_NAME, OLD_STATE_FOLDER, terraformDirPath, repoName };
 /***/ 1179:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-const { promisify } = __nccwpck_require__(3837);
 const fs = __nccwpck_require__(7147);
 const path = __nccwpck_require__(1017);
 const { logger } = __nccwpck_require__(5928);
-
-const readdir = promisify(fs.readdir);
-const stat = promisify(fs.stat);
-
-async function* getFiles(directory = ".") {
-  for (const file of await readdir(directory)) {
-    const fullPath = path.join(directory, file);
-    const stats = await stat(fullPath);
-
-    if (stats.isDirectory()) {
-      yield* getFiles(fullPath);
-    }
-
-    if (stats.isFile()) {
-      yield fullPath;
-    }
-  }
-}
+const { getFiles } = __nccwpck_require__(3445);
 
 async function uploadDirectory(
   cloudStorageClient,
@@ -71085,6 +71067,7 @@ const { isEmptyDir } = __nccwpck_require__(7647);
 const fs = __nccwpck_require__(7147);
 const path = __nccwpck_require__(1017);
 const { logger } = __nccwpck_require__(5928);
+const { allowAccessToExecutable } = __nccwpck_require__(5549);
 
 const createResourcesProcess = async (
   cloudStorageClient,
@@ -71117,31 +71100,7 @@ const createResourcesProcess = async (
 
   logger(`does old-state exists?: ${fs.existsSync(oldStateFolder)}`);
 
-  const { execSync } = __nccwpck_require__(2081);
-
-  //   logger(
-  //     execSync(`mount | grep noexec`, {
-  //       encoding: "utf-8",
-  //     })
-  //   );
-
-  logger(
-    execSync(
-      `chmod +x ${oldStateFolder}/.terraform/providers/registry.terraform.io/hashicorp/google/4.73.1/linux_amd64/terraform-provider-google_v4.73.1_x5`,
-      {
-        encoding: "utf-8",
-      }
-    )
-  );
-
-  logger(
-    execSync(
-      `chmod +x ${oldStateFolder}/.terraform/providers/registry.terraform.io/hashicorp/google/4.73.1/windows_amd64/terraform-provider-google_v4.73.1_x5.exe`,
-      {
-        encoding: "utf-8",
-      }
-    )
-  );
+  allowAccessToExecutable(oldStateFolder);
 
   const initResponse = await terraformClient.init(whatFolderToUse);
   console.log(initResponse);
@@ -71177,6 +71136,48 @@ module.exports = { createResourcesProcess };
 
 /***/ }),
 
+/***/ 5549:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const { execSync } = __nccwpck_require__(2081);
+const { getFiles } = __nccwpck_require__(3445);
+
+const getProviderToUse = async (directoryPath) => {
+  let providerToUse;
+
+  const machineArchitecture =
+    (process.platform === "win32" ? "windows" : process.platform) +
+    "_" +
+    process.env["PROCESSOR_ARCHITECTURE"].toLowerCase();
+
+  for await (const filePath of getFiles(directoryPath)) {
+    try {
+      if (filePath.includes(machineArchitecture)) {
+        providerToUse = filePath;
+        break;
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  console.log(providerToUse);
+};
+
+// allows access to the terraform provider executable file
+const allowAccessToExecutable = async (pathToExectuable) => {
+  console.log(
+    execSync(`chmod +x ${await getProviderToUse(pathToExectuable)}`, {
+      encoding: "utf-8",
+    })
+  );
+};
+
+module.exports = { allowAccessToExecutable };
+
+
+/***/ }),
+
 /***/ 7647:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -71195,6 +71196,33 @@ const isEmptyDir = async (path) => {
 };
 
 module.exports = { isEmptyDir };
+
+
+/***/ }),
+
+/***/ 3445:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const { promisify } = __nccwpck_require__(3837);
+const readdir = promisify(fs.readdir);
+const stat = promisify(fs.stat);
+
+async function* getFiles(directory = ".") {
+  for (const file of await readdir(directory)) {
+    const fullPath = path.join(directory, file);
+    const stats = await stat(fullPath);
+
+    if (stats.isDirectory()) {
+      yield* getFiles(fullPath);
+    }
+
+    if (stats.isFile()) {
+      yield fullPath;
+    }
+  }
+}
+
+module.exports = { getFiles };
 
 
 /***/ }),
