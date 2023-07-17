@@ -52,8 +52,15 @@ const createResourcesProcess = async (
     fs.cpSync(oldStateFolder, repoName, { recursive: true });
 
   if (isBucketExist)
-    await deleteDirectory(cloudStorageClient, { bucketName, folderName: repoName });
-  await uploadDirectory(cloudStorageClient, { directoryPath: repoName });
+    await deleteDirectory(cloudStorageClient, {
+      bucketName,
+      folderName: repoName,
+    });
+
+  await uploadDirectory(cloudStorageClient, {
+    directoryPath: repoName,
+    bucketName,
+  });
 
   logger(applyResponse);
 };
