@@ -1,5 +1,4 @@
-const { terraform: terraformClient, storage: cloudStorageClient } =
-  loadClients();
+const { loadClients } = require("./load-dependencies/loadClients");
 const { createResourcesProcess } = require("./proceses/createResourcesProcess");
 const {
   BUCKET_NAME,
@@ -8,6 +7,9 @@ const {
   repoName,
 } = require("./constant");
 // const terraformDirPath = getInput("terraform_dir_path", { required: true });
+
+const { terraform: terraformClient, storage: cloudStorageClient } =
+  loadClients();
 
 const run = async () => {
   await createResourcesProcess(cloudStorageClient, terraformClient, {
