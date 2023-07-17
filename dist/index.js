@@ -29531,346 +29531,6 @@ module.exports = isStream;
 
 /***/ }),
 
-/***/ 4706:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-const child_process_1 = __nccwpck_require__(2081);
-class Base {
-    constructor(executableName, autoApproveOptionName) {
-        this.executableName = executableName;
-        this.autoApproveOptionName = autoApproveOptionName;
-        this.needsAnswer = (inputData) => {
-            // TODO rework to iterate through this.triggerWordsForInteractiveMode, to abort early?
-            let needsAnswer = false;
-            this.triggerWordsForInteractiveMode.forEach((text) => {
-                if (inputData.includes(text)) {
-                    needsAnswer = true;
-                }
-            });
-            return needsAnswer;
-        };
-        this.buildArgs = (baseCommand, options) => {
-            const basicArgs = [baseCommand];
-            if (options.autoApprove) {
-                basicArgs.push(this.autoApproveOptionName);
-            }
-            return basicArgs;
-        };
-        this.triggerWordsForInteractiveMode = [];
-        this.logger = {
-            log: async (data) => {
-                console.log(data);
-            }
-        };
-        this.stdErrStream = process.stderr;
-        this.stdOutStream = process.stdout;
-    }
-    setOutStreams(stdOutStream, stdErrStream) {
-        this.stdErrStream = stdErrStream;
-        this.stdOutStream = stdOutStream;
-    }
-    setLogger(logger) {
-        this.logger = logger;
-    }
-    async log(data, silent = true) {
-        if (!silent) {
-            await this.logger.log(data);
-        }
-    }
-    async executeSync(path, args, options) {
-        return new Promise((resolve, reject) => {
-            child_process_1.exec(`${this.executableName} ${args}`, {
-                cwd: `${path}`
-            }, async (err, stdout, stderr) => {
-                if (err) {
-                    await this.log(stderr, options.silent);
-                    return reject(err);
-                }
-                await this.log(stderr, options.silent);
-                await this.log(stdout, options.silent);
-                return resolve({ stderr, stdout });
-            });
-        });
-    }
-    parseOutputOptions(input) {
-        const options = {
-            silent: true,
-            simple: true
-        };
-        if (typeof input.silent !== 'undefined') {
-            options.silent = input.silent;
-        }
-        if (typeof input.simple !== 'undefined') {
-            options.simple = input.simple;
-        }
-        return options;
-    }
-    addTriggerWordForInteractiveMode(word) {
-        this.triggerWordsForInteractiveMode.push(word);
-    }
-    executeInteractive(baseCommand, path, options) {
-        if (options.silent && options.autoApprove === false) {
-            return Promise.reject('Silent set to "true" and having autoApprove at "false" is not supported');
-        }
-        return new Promise((resolve, reject) => {
-            let stdinPiped = false;
-            const args = this.buildArgs(baseCommand, options);
-            const executable = child_process_1.spawn(this.executableName, args, {
-                cwd: `${path}`
-            });
-            if (!options.silent) {
-                executable.stderr.pipe(this.stdErrStream);
-                executable.stdout.pipe(this.stdOutStream);
-            }
-            let aggregatedStdOut = '';
-            let aggregatedStdErr = '';
-            executable.stdout.on('data', (data) => {
-                aggregatedStdOut += data;
-                if (this.needsAnswer(data)) {
-                    stdinPiped = true;
-                    process.stdin.pipe(executable.stdin);
-                }
-            });
-            executable.stderr.on('data', (data) => {
-                aggregatedStdErr += data;
-                if (this.needsAnswer(data)) {
-                    stdinPiped = true;
-                    process.stdin.pipe(executable.stdin);
-                }
-            });
-            // on('exit') is always called before onClose, so we do not need on('exit') handler
-            // on('error') handler is never called
-            executable.on('close', (code) => {
-                if (stdinPiped) {
-                    process.stdin.unpipe(executable.stdin);
-                    process.stdin.destroy();
-                }
-                if (code !== 0) {
-                    // TODO throw a nice error hier
-                    return reject();
-                }
-                if (!options.silent) {
-                    executable.stderr.unpipe(this.stdErrStream);
-                    executable.stdout.unpipe(this.stdOutStream);
-                }
-                return resolve({ stdout: aggregatedStdOut, stderr: aggregatedStdErr });
-            });
-        });
-    }
-}
-exports.Base = Base;
-
-
-/***/ }),
-
-/***/ 7048:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-const Base_1 = __nccwpck_require__(4706);
-const Types_1 = __nccwpck_require__(6969);
-class Terraform extends Base_1.Base {
-    constructor() {
-        super('terraform', '-auto-approve');
-        this.addTriggerWordForInteractiveMode('Only \'yes\' will be accepted to approve');
-        this.addTriggerWordForInteractiveMode('Only \'yes\' will be accepted to confirm');
-    }
-    async init(path, options = { silent: true }) {
-        await this.executeSync(path, 'init', { silent: options.silent });
-    }
-    async output(path, options = {}) {
-        const parsedOptions = this.parseOutputOptions(options);
-        const { stdout } = await this.executeSync(path, 'output -json', { silent: parsedOptions.silent });
-        const output = JSON.parse(stdout);
-        if (options.simple) {
-            const keys = Object.keys(output);
-            const result = {};
-            keys.forEach((key) => {
-                result[key] = output[key].value;
-            });
-            return result;
-        }
-        return output;
-    }
-    async outputValue(path, value, options = {}) {
-        const parsedOptions = this.parseOutputOptions(options);
-        const { stdout } = await this.executeSync(path, `output -json ${value}`, { silent: parsedOptions.silent });
-        const output = JSON.parse(stdout);
-        if (parsedOptions.simple) {
-            return output.value;
-        }
-        return output;
-    }
-    async getOutputKeys(path, options = {}) {
-        const { stdout } = await this.executeSync(path, 'output -json', { silent: options.silent || true });
-        const output = JSON.parse(stdout);
-        return Object.keys(output);
-    }
-    async plan(path, options = {}) {
-        const { stdout } = await this.executeSync(path, 'plan', { silent: options.silent || false });
-        return this.parseResourceChanges(stdout, Types_1.ChangeTypes.PLAN);
-    }
-    async destroy(path, options = {}) {
-        const { stdout } = await this.executeInteractive('destroy', path, options);
-        return this.parseResourceChanges(stdout, Types_1.ChangeTypes.DESTROYED);
-    }
-    async apply(path, options = {}) {
-        const { stdout } = await this.executeInteractive('apply', path, options);
-        return this.parseResourceChanges(stdout, Types_1.ChangeTypes.ADDED);
-    }
-    parseResourceChanges(rawStringWithResourceChanges, command) {
-        if (rawStringWithResourceChanges.includes('No changes')) {
-            return {
-                addCount: 0,
-                changeCount: 0,
-                destroyCount: 0
-            };
-        }
-        let regexp = / /;
-        switch (command) {
-            case Types_1.ChangeTypes.PLAN:
-                regexp = new RegExp('Plan: (\\d*) to add, (\\d*) to change, (\\d*) to destroy', 'gi');
-                break;
-            case Types_1.ChangeTypes.ADDED:
-                regexp = new RegExp('Apply complete! Resources: (\\d*) added, (\\d*) changed, (\\d*) destroyed', 'gi');
-                break;
-            case Types_1.ChangeTypes.DESTROYED:
-                regexp = new RegExp('Destroy complete! Resources: (\\d) destroyed');
-                break;
-        }
-        const resourcesChangesWithoutStyles = rawStringWithResourceChanges.replace(/\u001b\[.*?m/g, '');
-        const matches = regexp.exec(resourcesChangesWithoutStyles);
-        if (matches) {
-            if (command === Types_1.ChangeTypes.DESTROYED) {
-                return {
-                    addCount: 0,
-                    changeCount: 0,
-                    destroyCount: parseInt(matches[1], 10)
-                };
-            }
-            return {
-                addCount: parseInt(matches[1], 10),
-                changeCount: parseInt(matches[2], 10),
-                destroyCount: parseInt(matches[3], 10)
-            };
-        }
-        throw new Error(`Could not extract added, changed and destroyed count with regexp ${regexp} from command ${rawStringWithResourceChanges}`);
-    }
-}
-exports.Terraform = Terraform;
-
-
-/***/ }),
-
-/***/ 2374:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-const Base_1 = __nccwpck_require__(4706);
-class Terragrunt extends Base_1.Base {
-    constructor() {
-        super('terragrunt', '--terragrunt-non-interactive');
-        this.addTriggerWordForInteractiveMode('Are you sure you want to run \'terragrunt apply\' in each folder of the stack described above?');
-        this.addTriggerWordForInteractiveMode('Are you sure you want to run \'terragrunt destroy\' in each folder of the stack described above?');
-        this.addTriggerWordForInteractiveMode('Are you sure you want to run \'terragrunt plan\' in each folder of the stack described above?');
-    }
-    async applyAll(path, options = {}) {
-        await this.executeInteractive('apply-all', path, options);
-    }
-    async destroyAll(path, options = {}) {
-        await this.executeInteractive('destroy-all', path, options);
-    }
-    async planAll(path, options = {}) {
-        await this.executeSync(path, 'plan-all', { silent: options.silent || false });
-    }
-    // public async outputAll(path: string, options: OutputOptions = {}): Promise<OutputObject[] | SimpleOutputObject[]> {
-    //   // TODO add output function to filter, e.g. "databases_*"
-    //   const parsedOptions = this.parseOutputOptions(options)
-    //   const { stdout } = await this.executeSync(path, 'output-all -json', { silent: parsedOptions.silent })
-    //   const outputs = <OutputObject[]>this.parseStdoutAsJson(stdout)
-    //   if (parsedOptions.simple) {
-    //     return outputs.map((output) => {
-    //       const keys = Object.keys(output)
-    //       const result = {}
-    //       keys.forEach((key) => {
-    //         result[key] = output[key].value
-    //       })
-    //       return result
-    //     })
-    //   }
-    //   return outputs
-    // }
-    async output(path, options = {}) {
-        const parsedOptions = this.parseOutputOptions(options);
-        const { stdout } = await this.executeSync(path, 'output -json', { silent: parsedOptions.silent });
-        const output = JSON.parse(stdout);
-        if (options.simple) {
-            const keys = Object.keys(output);
-            keys.forEach((key) => {
-                delete output[key].sensitive;
-                delete output[key].type;
-            });
-        }
-        return output;
-    }
-    async outputValue(path, value, options = {}) {
-        const parsedOptions = this.parseOutputOptions(options);
-        const { stdout } = await this.executeSync(path, `output -json ${value}`, { silent: parsedOptions.silent });
-        const output = JSON.parse(stdout);
-        if (parsedOptions.simple) {
-            return output.value;
-        }
-        return output;
-    }
-    async getOutputKeys(path, options = {}) {
-        const { stdout } = await this.executeSync(path, 'output -json', { silent: options.silent || true });
-        const output = JSON.parse(stdout);
-        return Object.keys(output);
-    }
-}
-exports.Terragrunt = Terragrunt;
-
-
-/***/ }),
-
-/***/ 6969:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-var ChangeTypes;
-(function (ChangeTypes) {
-    ChangeTypes[ChangeTypes["PLAN"] = 0] = "PLAN";
-    ChangeTypes[ChangeTypes["ADDED"] = 1] = "ADDED";
-    ChangeTypes[ChangeTypes["DESTROYED"] = 2] = "DESTROYED";
-})(ChangeTypes || (ChangeTypes = {}));
-exports.ChangeTypes = ChangeTypes;
-
-
-/***/ }),
-
-/***/ 6502:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-const Terragrunt_1 = __nccwpck_require__(2374);
-exports.Terragrunt = Terragrunt_1.Terragrunt;
-const Terraform_1 = __nccwpck_require__(7048);
-exports.Terraform = Terraform_1.Terraform;
-
-
-/***/ }),
-
 /***/ 6941:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -71221,6 +70881,38 @@ module.exports = Queue;
 
 /***/ }),
 
+/***/ 6494:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const { execSync } = __nccwpck_require__(2081);
+
+class Terraform {
+  constructor() {}
+
+  init = (relativePath) => {
+    return execSync(`terraform -chdir=${relativePath} init`, {
+      encoding: "utf-8",
+    });
+  };
+
+  plan = (relativePath) => {
+    return execSync(`terraform -chdir=${relativePath} plan`, {
+      encoding: "utf-8",
+    });
+  };
+
+  apply = (relativePath) => {
+    return execSync(`terraform -chdir=${relativePath} apply`, {
+      encoding: "utf-8",
+    });
+  };
+}
+
+module.exports = { Terraform };
+
+
+/***/ }),
+
 /***/ 2095:
 /***/ ((module) => {
 
@@ -71365,7 +71057,7 @@ module.exports = {
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const loadClients = () => {
-  const { Terraform } = __nccwpck_require__(6502);
+  const { Terraform } = __nccwpck_require__(6494);
   const { Storage } = __nccwpck_require__(1430);
   const terraform = new Terraform();
   const storage = new Storage();
@@ -71417,15 +71109,15 @@ const createResourcesProcess = async (
   logger(`isOldStateEmpty: ${isOldStateEmpty}`);
   const whatFolderToUse = isOldStateEmpty ? repoName : oldStateFolder;
 
-  const absolutePathForTerraformProcesses = __dirname + "/" + whatFolderToUse;
+//   const absolutePathForTerraformProcesses = __dirname + "/" + whatFolderToUse;
 
-  logger(
-    `absolutePathForTerraformProcesses: ${absolutePathForTerraformProcesses}`
-  );
+//   logger(
+//     `absolutePathForTerraformProcesses: ${absolutePathForTerraformProcesses}`
+//   );
 
-  await terraformClient.init(absolutePathForTerraformProcesses);
+  await terraformClient.init(whatFolderToUse);
   const planResponse = await terraformClient.plan(
-    absolutePathForTerraformProcesses,
+    whatFolderToUse,
     {
       autoApprove: true,
     }
@@ -71434,7 +71126,7 @@ const createResourcesProcess = async (
   logger(planResponse);
 
   const applyResponse = await terraformClient.apply(
-    absolutePathForTerraformProcesses,
+    whatFolderToUse,
     {
       autoApprove: true,
     }
