@@ -43,7 +43,8 @@ const createResourcesProcess = async (
 
   logger(`does old-state exists?: ${fs.existsSync(oldStateFolder)}`);
 
-  await terraformClient.init(whatFolderToUse);
+  const initResponse = await terraformClient.init(whatFolderToUse);
+  logger(initResponse)
   const planResponse = await terraformClient.plan(whatFolderToUse, {
     autoApprove: true,
   });
