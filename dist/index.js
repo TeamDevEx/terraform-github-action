@@ -76569,6 +76569,7 @@ const { isEmptyDir } = __nccwpck_require__(7647);
 const { getInput } = __nccwpck_require__(3722);
 const github = __nccwpck_require__(8408);
 const fs = __nccwpck_require__(7147);
+const path = __nccwpck_require__(1017);
 const { logger } = __nccwpck_require__(5928);
 
 const terraformDirPath = getInput("terraform_dir_path", { required: true });
