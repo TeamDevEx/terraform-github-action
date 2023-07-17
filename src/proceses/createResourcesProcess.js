@@ -37,16 +37,26 @@ const createResourcesProcess = async (
 
   const absolutePathForTerraformProcesses = __dirname + "/" + whatFolderToUse;
 
+  logger(
+    `absolutePathForTerraformProcesses: ${absolutePathForTerraformProcesses}`
+  );
+
   await terraformClient.init(absolutePathForTerraformProcesses);
-  const planResponse = await terraformClient.plan(absolutePathForTerraformProcesses, {
-    autoApprove: true,
-  });
+  const planResponse = await terraformClient.plan(
+    absolutePathForTerraformProcesses,
+    {
+      autoApprove: true,
+    }
+  );
 
   logger(planResponse);
 
-  const applyResponse = await terraformClient.apply(absolutePathForTerraformProcesses, {
-    autoApprove: true,
-  });
+  const applyResponse = await terraformClient.apply(
+    absolutePathForTerraformProcesses,
+    {
+      autoApprove: true,
+    }
+  );
 
   if (!isOldStateEmpty)
     fs.cpSync(oldStateFolder, repoName, { recursive: true });
