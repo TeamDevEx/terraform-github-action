@@ -76085,7 +76085,7 @@ const {
   downloadFolder,
   deleteDirectory,
 } = __nccwpck_require__(1179);
-const { isEmptyDir } = __nccwpck_require__(7647);
+const { isEmptyDir, moveFiles } = __nccwpck_require__(7647);
 const fs = __nccwpck_require__(7147);
 const { logger } = __nccwpck_require__(5928);
 const { allowAccessToExecutable } = __nccwpck_require__(5549);

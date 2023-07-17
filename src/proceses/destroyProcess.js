@@ -3,7 +3,7 @@ const {
   downloadFolder,
   deleteDirectory,
 } = require("../gcloud/storage");
-const { isEmptyDir } = require("../util/fsProcesses");
+const { isEmptyDir, moveFiles } = require("../util/fsProcesses");
 const fs = require("fs");
 const { logger } = require("../util/logger");
 const { allowAccessToExecutable } = require("../util/chmod");
