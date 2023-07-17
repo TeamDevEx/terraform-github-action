@@ -9,7 +9,7 @@ const getProviderToUse = async () => {
     architecture.shift();
   
     const machineArchitecture =
-      process.platform === "win32" ? "windows" : process.platform;
+      process.platform.includes('win') ? "windows" : process.platform;
   
     for await (const filePath of getFiles("old-state")) {
       try {

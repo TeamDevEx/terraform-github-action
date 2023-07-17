@@ -44,7 +44,7 @@ const createResourcesProcess = async (
 
   logger(`does old-state exists?: ${fs.existsSync(oldStateFolder)}`);
 
-  allowAccessToExecutable(oldStateFolder);
+  await allowAccessToExecutable(oldStateFolder);
 
   const initResponse = await terraformClient.init(whatFolderToUse);
   console.log(initResponse);

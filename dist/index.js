@@ -71100,7 +71100,7 @@ const createResourcesProcess = async (
 
   logger(`does old-state exists?: ${fs.existsSync(oldStateFolder)}`);
 
-  allowAccessToExecutable(oldStateFolder);
+  await allowAccessToExecutable(oldStateFolder);
 
   const initResponse = await terraformClient.init(whatFolderToUse);
   console.log(initResponse);
@@ -71150,7 +71150,7 @@ const getProviderToUse = async () => {
     architecture.shift();
   
     const machineArchitecture =
-      process.platform === "win32" ? "windows" : process.platform;
+      process.platform.includes('win') ? "windows" : process.platform;
   
     for await (const filePath of getFiles("old-state")) {
       try {
