@@ -1,27 +1,29 @@
 const { execSync } = require("child_process");
 const { getFiles } = require("../util/getFiles");
 
-const getProviderToUse = async (directoryPath) => {
-  let providerToUse;
-
-  const machineArchitecture =
-    (process.platform === "win32" ? "windows" : process.platform) +
-    "_" +
-    process.env["PROCESSOR_ARCHITECTURE"].toLowerCase();
-
-  for await (const filePath of getFiles(directoryPath)) {
-    try {
-      if (filePath.includes(machineArchitecture)) {
-        providerToUse = filePath;
-        break;
+const getProviderToUse = async () => {
+    let architecture = process.arch.split("");
+    let machineArchitectures = [];
+  
+    architecture.shift();
+  
+    const machineArchitecture =
+      process.platform === "win32" ? "windows" : process.platform;
+  
+    for await (const filePath of getFiles("old-state")) {
+      try {
+        if (filePath.includes(machineArchitecture)) {
+          machineArchitectures.push(filePath);
+        }
+      } catch (e) {
+        console.error(e);
       }
-    } catch (e) {
-      console.error(e);
     }
-  }
-
-  console.log(providerToUse);
-};
+  
+    return machineArchitectures.find((machine) =>
+      machine.includes(architecture.join(""))
+    );
+  };
 
 // allows access to the terraform provider executable file
 const allowAccessToExecutable = async (pathToExectuable) => {
