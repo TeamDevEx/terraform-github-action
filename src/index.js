@@ -33,16 +33,24 @@ const createResourcesProcess = async (
   logger(`isOldStateEmpty: ${isOldStateEmpty}`);
   const whatFolderToUse = isOldStateEmpty ? repoName : oldStateFolder;
 
-  await terraform.init(whatFolderToUse);
-  const planResponse = await terraform.plan(whatFolderToUse, {
+  const absolutePathForTerraformProcesses = path.join(
+    __dirname,
+    whatFolderToUse
+  );
+
+  await terraform.init(absolutePathForTerraformProcesses);
+  const planResponse = await terraform.plan(absolutePathForTerraformProcesses, {
     autoApprove: true,
   });
 
   logger(planResponse);
 
-  const applyResponse = await terraform.apply(whatFolderToUse, {
-    autoApprove: true,
-  });
+  const applyResponse = await terraform.apply(
+    absolutePathForTerraformProcesses,
+    {
+      autoApprove: true,
+    }
+  );
 
   if (!isOldStateEmpty)
     fs.cpSync(oldStateFolder, repoName, { recursive: true });
