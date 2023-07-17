@@ -1,4 +1,5 @@
 const { promisify } = require("util");
+const fs = require("fs");
 const readdir = promisify(fs.readdir);
 const stat = promisify(fs.stat);
 

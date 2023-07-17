@@ -71204,6 +71204,7 @@ module.exports = { isEmptyDir };
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const { promisify } = __nccwpck_require__(3837);
+const fs = __nccwpck_require__(7147);
 const readdir = promisify(fs.readdir);
 const stat = promisify(fs.stat);
 
