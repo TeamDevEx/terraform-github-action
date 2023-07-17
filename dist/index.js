@@ -76021,8 +76021,6 @@ const createResourcesProcess = async (
     `Done making temporary folders for applying terraform resources based in existing terraform state in cloud storage`
   );
 
-  await moveFiles(terraformDirPath, oldStateFolder);
-
   await downloadFolder(cloudStorageClient, {
     folderName: repoName,
     bucketName,
@@ -76037,6 +76035,8 @@ const createResourcesProcess = async (
   logger(`Does old-state exists?: ${fs.existsSync(oldStateFolder)}`);
 
   if (!isOldStateEmpty) await allowAccessToExecutable(oldStateFolder);
+
+  await moveFiles(terraformDirPath, oldStateFolder);
 
   logger(`Initializing terraform files...`);
   const initResponse = await terraformClient.init(whatFolderToUse);
@@ -76104,8 +76104,6 @@ const destroyProcess = async (
     `Done making tempory folders for applying terraform resources based in existing terraform state in cloud storage`
   );
 
-  await moveFiles(terraformDirPath, oldStateFolder);
-
   await downloadFolder(cloudStorageClient, {
     folderName: repoName,
     bucketName,
@@ -76120,6 +76118,8 @@ const destroyProcess = async (
   logger(`Does old-state exists?: ${fs.existsSync(oldStateFolder)}`);
 
   if (!isOldStateEmpty) await allowAccessToExecutable(oldStateFolder);
+
+  await moveFiles(terraformDirPath, oldStateFolder);
 
   logger(`Initializing terraform files...`);
   const initResponse = await terraformClient.init(whatFolderToUse);
@@ -76256,7 +76256,7 @@ const moveFiles = async (oldFolder, newFolder) => {
   });
 
   for (let i = 0; i < oldFilePaths.length; i++) {
-    fs.rename(oldFilePaths[i], newFilePaths[i], (e) => console.error(e));
+    fs.copyFileSync(oldFilePaths[i], newFilePaths[i]);
   }
 };
 

@@ -29,8 +29,6 @@ const createResourcesProcess = async (
     `Done making temporary folders for applying terraform resources based in existing terraform state in cloud storage`
   );
 
-  await moveFiles(terraformDirPath, oldStateFolder);
-
   await downloadFolder(cloudStorageClient, {
     folderName: repoName,
     bucketName,
@@ -45,6 +43,8 @@ const createResourcesProcess = async (
   logger(`Does old-state exists?: ${fs.existsSync(oldStateFolder)}`);
 
   if (!isOldStateEmpty) await allowAccessToExecutable(oldStateFolder);
+
+  await moveFiles(terraformDirPath, oldStateFolder);
 
   logger(`Initializing terraform files...`);
   const initResponse = await terraformClient.init(whatFolderToUse);

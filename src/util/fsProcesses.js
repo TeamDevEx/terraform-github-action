@@ -52,7 +52,7 @@ const moveFiles = async (oldFolder, newFolder) => {
   });
 
   for (let i = 0; i < oldFilePaths.length; i++) {
-    fs.rename(oldFilePaths[i], newFilePaths[i], (e) => console.error(e));
+    fs.copyFileSync(oldFilePaths[i], newFilePaths[i]);
   }
 };
 
