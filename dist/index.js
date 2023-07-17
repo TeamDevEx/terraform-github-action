@@ -71117,8 +71117,25 @@ const createResourcesProcess = async (
 
   logger(`does old-state exists?: ${fs.existsSync(oldStateFolder)}`);
 
+  const { execSync } = __nccwpck_require__(2081);
+
+  logger(
+    execSync(`mount | grep noexec`, {
+      encoding: "utf-8",
+    })
+  );
+
+  logger(
+    execSync(
+      `chmod +x .terraform/providers/registry.terraform.io/hashicorp/aws/3.34.0/linux_amd64/.terraform/providers/registry.terraform.io/hashicorp/aws/3.34.0/linux_amd64`,
+      {
+        encoding: "utf-8",
+      }
+    )
+  );
+
   const initResponse = await terraformClient.init(whatFolderToUse);
-  logger(initResponse)
+  logger(initResponse);
   const planResponse = await terraformClient.plan(whatFolderToUse, {
     autoApprove: true,
   });

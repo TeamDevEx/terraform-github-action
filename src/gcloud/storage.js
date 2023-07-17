@@ -102,7 +102,7 @@ async function deleteDirectory(cloudStorageClient, { bucketName, folderName }) {
     f.metadata.id.includes(folderName + "/")
   );
 
-  if (files.length === 0) return true;
+  // fs.writeFileSync("log.json", JSON.stringify(dirFiles));
 
   for (const dirFile of dirFiles) {
     await dirFile.delete();
