@@ -70896,7 +70896,7 @@ class Terraform {
   };
 
   plan = (relativePath) => {
-    return execSync(`terraform -chdir=${relativePath} plan -auto-approve`, {
+    return execSync(`terraform -chdir=${relativePath} plan`, {
       encoding: "utf-8",
     });
   };
