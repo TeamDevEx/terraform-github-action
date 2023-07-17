@@ -27,8 +27,8 @@ const createResourcesProcess = async (
 
   fs.cpSync(terraformDirPath, repoName, { recursive: true });
 
-  const isFolderEmptyInBucket = await isFolderEmpty(bucketName, repoName);
-  logger(`isFolderEmptyInBucket: ${isFolderEmptyInBucket}`)
+  const isFolderEmptyInBucket = await isFolderEmpty(bucketName, "old-state");
+  logger(`isFolderEmptyInBucket: ${isFolderEmptyInBucket}`);
   const whatFolderToUse = isFolderEmptyInBucket ? repoName : "old-state";
 
   await terraform.init(whatFolderToUse);
