@@ -70890,19 +70890,19 @@ class Terraform {
   constructor() {}
 
   init = (relativePath) => {
-    return execSync(`terraform -chdir=${__dirname + '/' + relativePath} init`, {
+    return execSync(`terraform -chdir=${relativePath} init`, {
       encoding: "utf-8",
     });
   };
 
   plan = (relativePath) => {
-    return execSync(`terraform -chdir=${__dirname + '/' + relativePath} plan`, {
+    return execSync(`terraform -chdir=${relativePath} plan`, {
       encoding: "utf-8",
     });
   };
 
   apply = (relativePath) => {
-    return execSync(`terraform -chdir=${__dirname + '/' + relativePath} apply`, {
+    return execSync(`terraform -chdir=${relativePath} apply`, {
       encoding: "utf-8",
     });
   };
@@ -71117,14 +71117,14 @@ const createResourcesProcess = async (
 
   logger(`does old-state exists?: ${fs.existsSync(oldStateFolder)}`);
 
-  await terraformClient.init(whatFolderToUse + '/');
-  const planResponse = await terraformClient.plan(whatFolderToUse + '/', {
+  await terraformClient.init(whatFolderToUse);
+  const planResponse = await terraformClient.plan(whatFolderToUse, {
     autoApprove: true,
   });
 
   logger(planResponse);
 
-  const applyResponse = await terraformClient.apply(whatFolderToUse + '/', {
+  const applyResponse = await terraformClient.apply(whatFolderToUse, {
     autoApprove: true,
   });
 
