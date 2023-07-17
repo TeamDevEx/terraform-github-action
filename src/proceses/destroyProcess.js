@@ -1,7 +1,5 @@
 const {
-  uploadDirectory,
   doesBucketExist,
-  createBucket,
   downloadFolder,
   deleteDirectory,
 } = require("../gcloud/storage");
@@ -10,7 +8,7 @@ const fs = require("fs");
 const { logger } = require("../util/logger");
 const { allowAccessToExecutable } = require("../util/chmod");
 
-const destroyResources = async (
+const destroyProcess = async (
   terraformClient,
   { repoName, terraformDirPath, bucketName, oldStateFolder }
 ) => {
@@ -55,4 +53,4 @@ const destroyResources = async (
   console.log(deleteResponse);
 };
 
-module.exports = { destroyResources };
+module.exports = { destroyProcess };

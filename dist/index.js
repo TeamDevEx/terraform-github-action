@@ -76056,9 +76056,7 @@ module.exports = { createResourcesProcess };
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const {
-  uploadDirectory,
   doesBucketExist,
-  createBucket,
   downloadFolder,
   deleteDirectory,
 } = __nccwpck_require__(1179);
@@ -76067,7 +76065,7 @@ const fs = __nccwpck_require__(7147);
 const { logger } = __nccwpck_require__(5928);
 const { allowAccessToExecutable } = __nccwpck_require__(5549);
 
-const destroyResources = async (
+const destroyProcess = async (
   terraformClient,
   { repoName, terraformDirPath, bucketName, oldStateFolder }
 ) => {
@@ -76112,7 +76110,7 @@ const destroyResources = async (
   console.log(deleteResponse);
 };
 
-module.exports = { destroyResources };
+module.exports = { destroyProcess };
 
 
 /***/ }),
