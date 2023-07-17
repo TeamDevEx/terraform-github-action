@@ -21,7 +21,7 @@ class Terraform {
     });
   };
 
-  apply = (relativePath) => {
+  destroy = (relativePath) => {
     return execSync(`terraform -chdir=${relativePath} apply -destroy -auto-approve`, {
       encoding: "utf-8",
     });

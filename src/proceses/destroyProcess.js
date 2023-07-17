@@ -10,15 +10,13 @@ const fs = require("fs");
 const { logger } = require("../util/logger");
 const { allowAccessToExecutable } = require("../util/chmod");
 
-const createResourcesProcess = async (
-  cloudStorageClient,
+const destroyResources = async (
   terraformClient,
   { repoName, terraformDirPath, bucketName, oldStateFolder }
 ) => {
   const isBucketExist = await doesBucketExist(cloudStorageClient, {
     bucketName,
   });
-  if (!isBucketExist) await createBucket(cloudStorageClient, { bucketName });
   if (!fs.existsSync(repoName)) fs.mkdirSync(repoName);
   if (!fs.existsSync(oldStateFolder)) fs.mkdirSync(oldStateFolder);
 
@@ -45,25 +43,16 @@ const createResourcesProcess = async (
 
   console.log(planResponse);
 
-  const applyResponse = await terraformClient.apply(whatFolderToUse, {
+  await terraformClient.destroy(whatFolderToUse, {
     autoApprove: true,
   });
 
-  if (!isOldStateEmpty)
-    fs.cpSync(oldStateFolder, repoName, { recursive: true });
-
-  if ((isBucketExist || !isOldStateEmpty) && applyResponse)
-    await deleteDirectory(cloudStorageClient, {
-      bucketName,
-      folderName: repoName,
-    });
-
-  await uploadDirectory(cloudStorageClient, {
-    directoryPath: repoName,
+  const deleteResponse = await deleteDirectory(cloudStorageClient, {
     bucketName,
+    folderName: repoName,
   });
 
-  console.log(applyResponse);
+  console.log(deleteResponse);
 };
 
-module.exports = { createResourcesProcess };
+module.exports = { destroyResources };
