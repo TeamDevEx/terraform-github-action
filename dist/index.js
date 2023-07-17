@@ -71119,15 +71119,24 @@ const createResourcesProcess = async (
 
   const { execSync } = __nccwpck_require__(2081);
 
-//   logger(
-//     execSync(`mount | grep noexec`, {
-//       encoding: "utf-8",
-//     })
-//   );
+  //   logger(
+  //     execSync(`mount | grep noexec`, {
+  //       encoding: "utf-8",
+  //     })
+  //   );
 
   logger(
     execSync(
       `chmod +x ${oldStateFolder}/.terraform/providers/registry.terraform.io/hashicorp/google/4.73.1/linux_amd64/terraform-provider-google_v4.73.1_x5`,
+      {
+        encoding: "utf-8",
+      }
+    )
+  );
+
+  logger(
+    execSync(
+      `chmod +x ${oldStateFolder}/.terraform/providers/registry.terraform.io/hashicorp/google/4.73.1/windows_amd64/terraform-provider-google_v4.73.1_x5.exe`,
       {
         encoding: "utf-8",
       }
