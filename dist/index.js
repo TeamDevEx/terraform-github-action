@@ -71117,7 +71117,7 @@ const createResourcesProcess = async (
 
   logger(`does old-state exists?: ${fs.existsSync(oldStateFolder)}`);
 
-//   const { execSync } = require("child_process");
+  const { execSync } = __nccwpck_require__(2081);
 
 //   logger(
 //     execSync(`mount | grep noexec`, {
@@ -71135,12 +71135,12 @@ const createResourcesProcess = async (
   );
 
   const initResponse = await terraformClient.init(whatFolderToUse);
-  logger(initResponse);
+  console.log(initResponse);
   const planResponse = await terraformClient.plan(whatFolderToUse, {
     autoApprove: true,
   });
 
-  logger(planResponse);
+  console.log(planResponse);
 
   const applyResponse = await terraformClient.apply(whatFolderToUse, {
     autoApprove: true,
@@ -71160,7 +71160,7 @@ const createResourcesProcess = async (
     bucketName,
   });
 
-  logger(applyResponse);
+  console.log(applyResponse);
 };
 
 module.exports = { createResourcesProcess };
