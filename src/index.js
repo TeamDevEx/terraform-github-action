@@ -5,8 +5,8 @@ const {
   doesBucketExist,
   createBucket,
   downloadFolder,
-  isFolderEmpty,
 } = require("./gcloud/storage");
+const { isEmptyDir } = require("./util/fsProcesses");
 const { getInput } = require("@actions/core");
 const github = require("@actions/github");
 const fs = require("fs");
@@ -14,6 +14,7 @@ const { logger } = require("./util/logger");
 
 const terraformDirPath = getInput("terraform_dir_path", { required: true });
 const bucketName = "terraform-config-states";
+const oldStateFolder = "old-state";
 
 const createResourcesProcess = async (
   bucketName,
@@ -22,14 +23,15 @@ const createResourcesProcess = async (
 ) => {
   if (!(await doesBucketExist(bucketName))) await createBucket(bucketName);
   if (!fs.existsSync(repoName)) fs.mkdirSync(repoName);
+  if (!fs.existsSync(oldStateFolder)) fs.mkdirSync(oldStateFolder);
 
   await downloadFolder(bucketName, repoName);
 
   fs.cpSync(terraformDirPath, repoName, { recursive: true });
 
-  const isFolderEmptyInBucket = await isFolderEmpty(bucketName, "old-state");
-  logger(`isFolderEmptyInBucket: ${isFolderEmptyInBucket}`);
-  const whatFolderToUse = isFolderEmptyInBucket ? repoName : "old-state";
+  const isOldStateEmpty = await isEmptyDir(oldStateFolder);
+  logger(`isOldStateEmpty: ${isOldStateEmpty}`);
+  const whatFolderToUse = isOldStateEmpty ? repoName : oldStateFolder;
 
   await terraform.init(whatFolderToUse);
   const planResponse = await terraform.plan(whatFolderToUse, {
@@ -42,7 +44,7 @@ const createResourcesProcess = async (
     autoApprove: true,
   });
 
-  await uploadDirectory(bucketName, repoName);
+  await uploadDirectory(bucketName, whatFolderToUse);
 
   logger(applyResponse);
 };

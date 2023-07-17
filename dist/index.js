@@ -76264,6 +76264,28 @@ module.exports = {
 
 /***/ }),
 
+/***/ 7647:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const { promises } = __nccwpck_require__(7147);
+
+const isEmptyDir = async (path) => {
+  try {
+    const directory = await promises.opendir(path);
+    const entry = await directory.read();
+    await directory.close();
+
+    return entry === null;
+  } catch (error) {
+    return false;
+  }
+};
+
+module.exports = { isEmptyDir };
+
+
+/***/ }),
+
 /***/ 5928:
 /***/ ((module) => {
 
@@ -76542,8 +76564,8 @@ const {
   doesBucketExist,
   createBucket,
   downloadFolder,
-  isFolderEmpty,
 } = __nccwpck_require__(1179);
+const { isEmptyDir } = __nccwpck_require__(7647);
 const { getInput } = __nccwpck_require__(3722);
 const github = __nccwpck_require__(8408);
 const fs = __nccwpck_require__(7147);
@@ -76551,6 +76573,7 @@ const { logger } = __nccwpck_require__(5928);
 
 const terraformDirPath = getInput("terraform_dir_path", { required: true });
 const bucketName = "terraform-config-states";
+const oldStateFolder = "old-state";
 
 const createResourcesProcess = async (
   bucketName,
@@ -76559,14 +76582,15 @@ const createResourcesProcess = async (
 ) => {
   if (!(await doesBucketExist(bucketName))) await createBucket(bucketName);
   if (!fs.existsSync(repoName)) fs.mkdirSync(repoName);
+  if (!fs.existsSync(oldStateFolder)) fs.mkdirSync(oldStateFolder);
 
   await downloadFolder(bucketName, repoName);
 
   fs.cpSync(terraformDirPath, repoName, { recursive: true });
 
-  const isFolderEmptyInBucket = await isFolderEmpty(bucketName, "old-state");
-  logger(`isFolderEmptyInBucket: ${isFolderEmptyInBucket}`);
-  const whatFolderToUse = isFolderEmptyInBucket ? repoName : "old-state";
+  const isOldStateEmpty = await isEmptyDir(oldStateFolder);
+  logger(`isOldStateEmpty: ${isOldStateEmpty}`);
+  const whatFolderToUse = isOldStateEmpty ? repoName : oldStateFolder;
 
   await terraform.init(whatFolderToUse);
   const planResponse = await terraform.plan(whatFolderToUse, {
@@ -76579,7 +76603,7 @@ const createResourcesProcess = async (
     autoApprove: true,
   });
 
-  await uploadDirectory(bucketName, repoName);
+  await uploadDirectory(bucketName, whatFolderToUse);
 
   logger(applyResponse);
 };
