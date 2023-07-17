@@ -70896,13 +70896,13 @@ class Terraform {
   };
 
   plan = (relativePath) => {
-    return execSync(`terraform -chdir=${relativePath} plan`, {
+    return execSync(`terraform -chdir=${relativePath} plan -auto-approve`, {
       encoding: "utf-8",
     });
   };
 
   apply = (relativePath) => {
-    return execSync(`terraform -chdir=${relativePath} apply`, {
+    return execSync(`terraform -chdir=${relativePath} apply -auto-approve`, {
       encoding: "utf-8",
     });
   };
