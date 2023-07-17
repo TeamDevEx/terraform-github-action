@@ -17,7 +17,9 @@ const createResourcesProcess = async (
   terraformClient,
   { repoName, terraformDirPath, bucketName, oldStateFolder }
 ) => {
-  const isBucketExist = await doesBucketExist(bucketName);
+  const isBucketExist = await doesBucketExist(cloudStorageClient, {
+    bucketName,
+  });
   if (!isBucketExist) await createBucket(cloudStorageClient, { bucketName });
   if (!fs.existsSync(repoName)) fs.mkdirSync(repoName);
   if (!fs.existsSync(oldStateFolder)) fs.mkdirSync(oldStateFolder);
