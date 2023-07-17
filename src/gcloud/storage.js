@@ -75,7 +75,7 @@ async function downloadFolder(cloudStorgae, { folderName, bucketName }) {
 }
 
 async function deleteDirectory(cloudStorageClient, { bucketName, folderName }) {
-  logger(`Deleting tf config state to cloud storge bucket`);
+  logger(`Deleting tf config state in cloud storge bucket: ${bucketName}`);
   const bucketInstance = cloudStorageClient.bucket(bucketName);
 
   const [files] = await bucketInstance.getFiles();
@@ -84,12 +84,14 @@ async function deleteDirectory(cloudStorageClient, { bucketName, folderName }) {
     f.metadata.id.includes(folderName + "/")
   );
 
-  // fs.writeFileSync("log.json", JSON.stringify(dirFiles));
-
   for (const dirFile of dirFiles) {
     await dirFile.delete();
-    logger(`deleted ${dirFile.name}`);
+    logger(`Deleted ${dirFile.name}`);
   }
+
+  logger(
+    `Done with directory deletion for ${folderName} in cloud bucket ${bucketName}`
+  );
 }
 
 module.exports = {

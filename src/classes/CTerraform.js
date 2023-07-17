@@ -1,4 +1,5 @@
 const { execSync } = require("child_process");
+const { logger } = require("../util/logger");
 
 class Terraform {
   constructor() {}
@@ -22,9 +23,11 @@ class Terraform {
   };
 
   destroy = (relativePath) => {
-    return execSync(`terraform -chdir=${relativePath} apply -destroy -auto-approve`, {
+    logger("Deleting terraform resources");
+    execSync(`terraform -chdir=${relativePath} apply -destroy -auto-approve`, {
       encoding: "utf-8",
     });
+    logger("Resources deleted!");
   };
 }
 

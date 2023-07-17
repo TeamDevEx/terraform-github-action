@@ -75804,6 +75804,7 @@ module.exports = Queue;
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const { execSync } = __nccwpck_require__(2081);
+const { logger } = __nccwpck_require__(5928);
 
 class Terraform {
   constructor() {}
@@ -75827,9 +75828,11 @@ class Terraform {
   };
 
   destroy = (relativePath) => {
-    return execSync(`terraform -chdir=${relativePath} apply -destroy -auto-approve`, {
+    logger("Deleting terraform resources");
+    execSync(`terraform -chdir=${relativePath} apply -destroy -auto-approve`, {
       encoding: "utf-8",
     });
+    logger("Resources deleted!");
   };
 }
 
@@ -75932,7 +75935,7 @@ async function downloadFolder(cloudStorgae, { folderName, bucketName }) {
 }
 
 async function deleteDirectory(cloudStorageClient, { bucketName, folderName }) {
-  logger(`Deleting tf config state to cloud storge bucket`);
+  logger(`Deleting tf config state in cloud storge bucket: ${bucketName}`);
   const bucketInstance = cloudStorageClient.bucket(bucketName);
 
   const [files] = await bucketInstance.getFiles();
@@ -75941,12 +75944,14 @@ async function deleteDirectory(cloudStorageClient, { bucketName, folderName }) {
     f.metadata.id.includes(folderName + "/")
   );
 
-  // fs.writeFileSync("log.json", JSON.stringify(dirFiles));
-
   for (const dirFile of dirFiles) {
     await dirFile.delete();
-    logger(`deleted ${dirFile.name}`);
+    logger(`Deleted ${dirFile.name}`);
   }
+
+  logger(
+    `Done with directory deletion for ${folderName} in cloud bucket ${bucketName}`
+  );
 }
 
 module.exports = {
@@ -75963,11 +75968,16 @@ module.exports = {
 /***/ 6784:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
+const { logger } = __nccwpck_require__(5928);
 const loadClients = () => {
+  logger(`Loading clients for cloud storage and terraform`);
+
   const { Terraform } = __nccwpck_require__(6494);
   const { Storage } = __nccwpck_require__(1430);
   const terraform = new Terraform();
   const storage = new Storage();
+
+  logger(`Done loading clients for cloud storage and terraform`);
   return { terraform, storage };
 };
 
@@ -75999,9 +76009,16 @@ const createResourcesProcess = async (
   const isBucketExist = await doesBucketExist(cloudStorageClient, {
     bucketName,
   });
+
+  logger(
+    `Making tempory folders for applying terraform resources based in existing terraform state in cloud storage`
+  );
   if (!isBucketExist) await createBucket(cloudStorageClient, { bucketName });
   if (!fs.existsSync(repoName)) fs.mkdirSync(repoName);
   if (!fs.existsSync(oldStateFolder)) fs.mkdirSync(oldStateFolder);
+  logger(
+    `Done making tempory folders for applying terraform resources based in existing terraform state in cloud storage`
+  );
 
   await downloadFolder(cloudStorageClient, {
     folderName: repoName,
@@ -76011,24 +76028,31 @@ const createResourcesProcess = async (
   fs.cpSync(terraformDirPath, repoName, { recursive: true });
 
   const isOldStateEmpty = await isEmptyDir(oldStateFolder);
-  logger(`isOldStateEmpty: ${isOldStateEmpty}`);
+  logger(`Is the old-state directory empty: ${isOldStateEmpty}`);
   const whatFolderToUse = isOldStateEmpty ? repoName : oldStateFolder;
 
-  logger(`does old-state exists?: ${fs.existsSync(oldStateFolder)}`);
+  logger(`Does old-state exists?: ${fs.existsSync(oldStateFolder)}`);
 
   if (!isOldStateEmpty) await allowAccessToExecutable(oldStateFolder);
 
+  logger(`Initializing terraform files...`);
   const initResponse = await terraformClient.init(whatFolderToUse);
   console.log(initResponse);
+  logger(`Done initializing terraform files...`);
+
+  logger(`Running terraform plan...`);
   const planResponse = await terraformClient.plan(whatFolderToUse, {
     autoApprove: true,
   });
-
   console.log(planResponse);
+  logger(`Done running terraform plan...`);
 
+  logger(`Running terraform apply...`);
   const applyResponse = await terraformClient.apply(whatFolderToUse, {
     autoApprove: true,
   });
+  console.log(applyResponse);
+  logger(`Done running terraform apply...`);
 
   if (!isOldStateEmpty)
     fs.cpSync(oldStateFolder, repoName, { recursive: true });
@@ -76043,8 +76067,6 @@ const createResourcesProcess = async (
     directoryPath: repoName,
     bucketName,
   });
-
-  console.log(applyResponse);
 };
 
 module.exports = { createResourcesProcess };
@@ -76070,8 +76092,14 @@ const destroyProcess = async (
   terraformClient,
   { repoName, terraformDirPath, bucketName, oldStateFolder }
 ) => {
+  logger(
+    `Making tempory folders for applying terraform resources based in existing terraform state in cloud storage`
+  );
   if (!fs.existsSync(repoName)) fs.mkdirSync(repoName);
   if (!fs.existsSync(oldStateFolder)) fs.mkdirSync(oldStateFolder);
+  logger(
+    `Done making tempory folders for applying terraform resources based in existing terraform state in cloud storage`
+  );
 
   await downloadFolder(cloudStorageClient, {
     folderName: repoName,
@@ -76081,32 +76109,33 @@ const destroyProcess = async (
   fs.cpSync(terraformDirPath, repoName, { recursive: true });
 
   const isOldStateEmpty = await isEmptyDir(oldStateFolder);
-  logger(`isOldStateEmpty: ${isOldStateEmpty}`);
+  logger(`Is the old-state directory empty: ${isOldStateEmpty}`);
   const whatFolderToUse = isOldStateEmpty ? repoName : oldStateFolder;
 
-  logger(`does old-state exists?: ${fs.existsSync(oldStateFolder)}`);
+  logger(`Does old-state exists?: ${fs.existsSync(oldStateFolder)}`);
 
   if (!isOldStateEmpty) await allowAccessToExecutable(oldStateFolder);
 
+  logger(`Initializing terraform files...`);
   const initResponse = await terraformClient.init(whatFolderToUse);
   console.log(initResponse);
+  logger(`Done initializing terraform files...`);
+
+  logger(`Running terraform plan...`);
   const planResponse = await terraformClient.plan(whatFolderToUse, {
     autoApprove: true,
   });
-
   console.log(planResponse);
+  logger(`Done running terraform plan...`);
 
   await terraformClient.destroy(whatFolderToUse, {
     autoApprove: true,
   });
 
-  logger("deleting resources");
   await deleteDirectory(cloudStorageClient, {
     bucketName,
     folderName: repoName,
   });
-
-  logger("resources deleted!");
 };
 
 module.exports = { destroyProcess };
@@ -76119,40 +76148,42 @@ module.exports = { destroyProcess };
 
 const { execSync } = __nccwpck_require__(2081);
 const { getFiles } = __nccwpck_require__(3445);
+const { logger } = __nccwpck_require__(5928);
 
 const getProviderToUse = async () => {
-    let providerToUse
-    let architecture = process.arch.split("");
-    let machineArchitectures = [];
-  
-    architecture.shift();
-  
-    const machineArchitecture =
-      process.platform.includes('win') ? "windows" : process.platform;
-  
-    for await (const filePath of getFiles("old-state")) {
-      try {
-        if (filePath.includes(machineArchitecture)) {
-          machineArchitectures.push(filePath);
-        }
-      } catch (e) {
-        console.error(e);
+  let providerToUse;
+  let architecture = process.arch.split("");
+  let machineArchitectures = [];
+
+  architecture.shift();
+
+  const machineArchitecture = process.platform.includes("win")
+    ? "windows"
+    : process.platform;
+
+  for await (const filePath of getFiles("old-state")) {
+    try {
+      if (filePath.includes(machineArchitecture)) {
+        machineArchitectures.push(filePath);
       }
+    } catch (e) {
+      console.error(e);
     }
-  
-    providerToUse =  machineArchitectures.find((machine) =>
-      machine.includes(architecture.join(""))
-    );
+  }
 
-    console.log("providerToUse", providerToUse)
+  providerToUse = machineArchitectures.find((machine) =>
+    machine.includes(architecture.join(""))
+  );
 
-    return providerToUse
-  };
+  return providerToUse;
+};
 
 // allows access to the terraform provider executable file
 const allowAccessToExecutable = async (pathToExectuable) => {
+  const providerToUse = await getProviderToUse(pathToExectuable);
+  logger(`Allowing access for executable: ${providerToUse}`);
   console.log(
-    execSync(`chmod +x ${await getProviderToUse(pathToExectuable)}`, {
+    execSync(`chmod +x ${providerToUse}`, {
       encoding: "utf-8",
     })
   );
