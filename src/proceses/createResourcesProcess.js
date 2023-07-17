@@ -53,7 +53,7 @@ const createResourcesProcess = async (
 
   logger(
     execSync(
-      `chmod +x .terraform/providers/registry.terraform.io/hashicorp/aws/3.34.0/linux_amd64/.terraform/providers/registry.terraform.io/hashicorp/aws/3.34.0/linux_amd64`,
+      `chmod +x ${oldStateFolder}/.terraform/providers/registry.terraform.io/hashicorp/aws/3.34.0/linux_amd64/.terraform/providers/registry.terraform.io/hashicorp/aws/3.34.0/linux_amd64`,
       {
         encoding: "utf-8",
       }
