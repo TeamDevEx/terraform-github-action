@@ -1,8 +1,3 @@
-const { Storage } = require("@google-cloud/storage");
-
-// Creates a client
-const storage = new Storage();
-
 const { promisify } = require("util");
 const fs = require("fs");
 const path = require("path");
@@ -26,9 +21,12 @@ async function* getFiles(directory = ".") {
   }
 }
 
-async function uploadDirectory(bucketName, directoryPath) {
+async function uploadDirectory(
+  cloudStorageClient,
+  { directoryPath, bucketName }
+) {
   logger(`Uploading tf config state to cloud storge bucket`);
-  const bucket = storage.bucket(bucketName);
+  const bucketInstance = cloudStorageClient.bucket(bucketName);
   let successfulUploads = 0;
 
   for await (const filePath of getFiles(directoryPath)) {
@@ -36,7 +34,7 @@ async function uploadDirectory(bucketName, directoryPath) {
       const dirName = path.dirname(directoryPath);
       const destination = path.relative(dirName, filePath);
 
-      await bucket.upload(filePath, { destination });
+      await bucketInstance.upload(filePath, { destination });
 
       logger(`Successfully uploaded: ${filePath}`);
       successfulUploads++;
@@ -50,7 +48,7 @@ async function uploadDirectory(bucketName, directoryPath) {
 
 async function doesBucketExist(bucketName) {
   logger(`Checking if bucket exists`);
-  const [buckets] = await storage.getBuckets();
+  const [buckets] = await cloudStorageClient.getBuckets();
 
   const isThereExistingBucket = buckets.find((bucket) => {
     return bucketName === bucket.name;
@@ -61,7 +59,7 @@ async function doesBucketExist(bucketName) {
 
 async function createBucket(bucketName) {
   logger(`Creating bucket: ${bucketName}`);
-  const [bucket] = await storage.createBucket(bucketName, {
+  const [bucket] = await cloudStorageClient.createBucket(bucketName, {
     location: "US",
     storageClass: "STANDARD",
   });
@@ -69,15 +67,14 @@ async function createBucket(bucketName) {
   logger(`Bucket ${bucket.name} created.`);
 }
 
-async function downloadFolder(bucketName, folderName) {
+async function downloadFolder(cloudStorgae, { folderName, bucketName }) {
   logger(
     `Downloading folder for tf config states for this repository: ${folderName}`
   );
-  const [files] = await storage
-    .bucket(bucketName)
-    .getFiles({ prefix: folderName });
+  const bucketInstance = cloudStorgae.bucket(bucketName);
+  const [files] = await bucketInstance.getFiles({ prefix: folderName });
 
-  files.forEach(async (file) => {
+  for (const file of files) {
     const dirPath = path.parse(file.name).dir.split("/");
     dirPath[0] = "old-state";
 
@@ -87,14 +84,12 @@ async function downloadFolder(bucketName, folderName) {
     if (!fs.existsSync(newDirPath))
       fs.mkdirSync(newDirPath, { recursive: true });
 
-    await storage
-      .bucket(bucketName)
-      .file(file.name)
-      .download({
-        destination: path.join(newFilePath),
-      });
+    await bucketInstance.file(file.name).download({
+      destination: path.join(newFilePath),
+    });
+
     logger(`gs://${bucketName}/${file.name} downloaded to ${newFilePath}.`);
-  });
+  }
 }
 
 async function deleteDirectory(cloudStorageClient, { bucketName, folderName }) {
