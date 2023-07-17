@@ -76603,6 +76603,9 @@ const createResourcesProcess = async (
     autoApprove: true,
   });
 
+  if (!isOldStateEmpty)
+    fs.cpSync(oldStateFolder, repoName, { recursive: true });
+
   await uploadDirectory(bucketName, whatFolderToUse);
 
   logger(applyResponse);
