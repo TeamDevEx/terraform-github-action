@@ -71417,16 +71417,16 @@ const createResourcesProcess = async (
   logger(`isOldStateEmpty: ${isOldStateEmpty}`);
   const whatFolderToUse = isOldStateEmpty ? repoName : oldStateFolder;
 
-  // const absolutePathForTerraformProcesses = __dirname + "/" + whatFolderToUse;
+  const absolutePathForTerraformProcesses = __dirname + "/" + whatFolderToUse;
 
-  await terraformClient.init(whatFolderToUse);
-  const planResponse = await terraformClient.plan(whatFolderToUse, {
+  await terraformClient.init(absolutePathForTerraformProcesses);
+  const planResponse = await terraformClient.plan(absolutePathForTerraformProcesses, {
     autoApprove: true,
   });
 
   logger(planResponse);
 
-  const applyResponse = await terraformClient.apply(whatFolderToUse, {
+  const applyResponse = await terraformClient.apply(absolutePathForTerraformProcesses, {
     autoApprove: true,
   });
 
