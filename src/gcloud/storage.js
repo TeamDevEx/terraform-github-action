@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const { logger } = require("../util/logger");
-const { getFiles } = require("../util/getFiles");
+const { getFiles } = require("../util/fsProcesses");
 
 async function uploadDirectory(
   cloudStorageClient,

@@ -75861,7 +75861,7 @@ module.exports = { BUCKET_NAME, OLD_STATE_FOLDER, terraformDirPath, repoName };
 const fs = __nccwpck_require__(7147);
 const path = __nccwpck_require__(1017);
 const { logger } = __nccwpck_require__(5928);
-const { getFiles } = __nccwpck_require__(3445);
+const { getFiles } = __nccwpck_require__(7647);
 
 async function uploadDirectory(
   cloudStorageClient,
@@ -76152,7 +76152,7 @@ module.exports = { destroyProcess };
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const { execSync } = __nccwpck_require__(2081);
-const { getFiles } = __nccwpck_require__(3445);
+const { getFiles } = __nccwpck_require__(7647);
 const { logger } = __nccwpck_require__(5928);
 
 const getProviderToUse = async () => {
@@ -76203,6 +76203,11 @@ module.exports = { allowAccessToExecutable };
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const { promises } = __nccwpck_require__(7147);
+const path = __nccwpck_require__(1017);
+const { promisify } = __nccwpck_require__(3837);
+const fs = __nccwpck_require__(7147);
+const readdir = promisify(fs.readdir);
+const stat = promisify(fs.stat);
 
 const isEmptyDir = async (path) => {
   try {
@@ -76215,6 +76220,21 @@ const isEmptyDir = async (path) => {
     return false;
   }
 };
+
+async function* getFiles(directory = ".") {
+  for (const file of await readdir(directory)) {
+    const fullPath = path.join(directory, file);
+    const stats = await stat(fullPath);
+
+    if (stats.isDirectory()) {
+      yield* getFiles(fullPath);
+    }
+
+    if (stats.isFile()) {
+      yield fullPath;
+    }
+  }
+}
 
 const moveFiles = async (oldFolder, newFolder) => {
   let filePathsParsed = [];
@@ -76240,36 +76260,7 @@ const moveFiles = async (oldFolder, newFolder) => {
   }
 };
 
-module.exports = { isEmptyDir, moveFiles };
-
-
-/***/ }),
-
-/***/ 3445:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const path = __nccwpck_require__(1017)
-const { promisify } = __nccwpck_require__(3837);
-const fs = __nccwpck_require__(7147);
-const readdir = promisify(fs.readdir);
-const stat = promisify(fs.stat);
-
-async function* getFiles(directory = ".") {
-  for (const file of await readdir(directory)) {
-    const fullPath = path.join(directory, file);
-    const stats = await stat(fullPath);
-
-    if (stats.isDirectory()) {
-      yield* getFiles(fullPath);
-    }
-
-    if (stats.isFile()) {
-      yield fullPath;
-    }
-  }
-}
-
-module.exports = { getFiles };
+module.exports = { isEmptyDir, moveFiles, getFiles };
 
 
 /***/ }),

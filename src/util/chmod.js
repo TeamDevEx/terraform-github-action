@@ -1,5 +1,5 @@
 const { execSync } = require("child_process");
-const { getFiles } = require("../util/getFiles");
+const { getFiles } = require("../util/fsProcesses");
 const { logger } = require("./logger");
 
 const getProviderToUse = async () => {
