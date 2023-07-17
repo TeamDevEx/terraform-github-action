@@ -75821,6 +75821,12 @@ class Terraform {
     });
   };
 
+  planDestroy = (relativePath) => {
+    return execSync(`terraform -chdir=${relativePath} plan -destroy`, {
+      encoding: "utf-8",
+    });
+  };
+
   apply = (relativePath) => {
     return execSync(`terraform -chdir=${relativePath} apply -auto-approve`, {
       encoding: "utf-8",
@@ -76127,7 +76133,7 @@ const destroyProcess = async (
   logger(`Done initializing terraform files...`);
 
   logger(`Running terraform plan...`);
-  const planResponse = await terraformClient.plan(whatFolderToUse, {
+  const planResponse = await terraformClient.planDestroy(whatFolderToUse, {
     autoApprove: true,
   });
   console.log(planResponse);

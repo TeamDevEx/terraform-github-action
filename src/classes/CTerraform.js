@@ -16,6 +16,12 @@ class Terraform {
     });
   };
 
+  planDestroy = (relativePath) => {
+    return execSync(`terraform -chdir=${relativePath} plan -destroy`, {
+      encoding: "utf-8",
+    });
+  };
+
   apply = (relativePath) => {
     return execSync(`terraform -chdir=${relativePath} apply -auto-approve`, {
       encoding: "utf-8",

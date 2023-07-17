@@ -45,7 +45,7 @@ const destroyProcess = async (
   logger(`Done initializing terraform files...`);
 
   logger(`Running terraform plan...`);
-  const planResponse = await terraformClient.plan(whatFolderToUse, {
+  const planResponse = await terraformClient.planDestroy(whatFolderToUse, {
     autoApprove: true,
   });
   console.log(planResponse);
