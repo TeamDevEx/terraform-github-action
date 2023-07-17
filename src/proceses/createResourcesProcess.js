@@ -4,7 +4,7 @@ const {
   createBucket,
   downloadFolder,
   deleteDirectory,
-} = require("./gcloud/storage");
+} = require("../gcloud/storage");
 const { isEmptyDir } = require("../util/fsProcesses");
 // const { getInput } = require("@actions/core");
 // const github = require("@actions/github");
