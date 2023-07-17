@@ -71125,14 +71125,14 @@ const createResourcesProcess = async (
 //     })
 //   );
 
-//   logger(
-//     execSync(
-//       `chmod +x ${oldStateFolder}/.terraform/providers/registry.terraform.io/hashicorp/aws/3.34.0/linux_amd64/.terraform/providers/registry.terraform.io/hashicorp/aws/3.34.0/linux_amd64`,
-//       {
-//         encoding: "utf-8",
-//       }
-//     )
-//   );
+  logger(
+    execSync(
+      `chmod +x ${oldStateFolder}/.terraform/providers/registry.terraform.io/hashicorp/google/4.73.1/linux_amd64/terraform-provider-google_v4.73.1_x5`,
+      {
+        encoding: "utf-8",
+      }
+    )
+  );
 
   const initResponse = await terraformClient.init(whatFolderToUse);
   logger(initResponse);
