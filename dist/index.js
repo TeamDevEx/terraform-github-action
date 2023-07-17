@@ -75876,7 +75876,8 @@ async function uploadDirectory(
       const dirName = path.dirname(directoryPath);
       const destination = path.relative(dirName, filePath);
 
-      await bucketInstance.upload(filePath, { destination });
+      if (!(path.parse(filePath).ext === ".tf"))
+        await bucketInstance.upload(filePath, { destination });
 
       logger(`Successfully uploaded: ${filePath}`);
       successfulUploads++;
@@ -75996,7 +75997,7 @@ const {
   downloadFolder,
   deleteDirectory,
 } = __nccwpck_require__(1179);
-const { isEmptyDir } = __nccwpck_require__(7647);
+const { isEmptyDir, moveFiles } = __nccwpck_require__(7647);
 const fs = __nccwpck_require__(7147);
 const { logger } = __nccwpck_require__(5928);
 const { allowAccessToExecutable } = __nccwpck_require__(5549);
@@ -76017,8 +76018,10 @@ const createResourcesProcess = async (
   if (!fs.existsSync(repoName)) fs.mkdirSync(repoName);
   if (!fs.existsSync(oldStateFolder)) fs.mkdirSync(oldStateFolder);
   logger(
-    `Done making tempory folders for applying terraform resources based in existing terraform state in cloud storage`
+    `Done making temporary folders for applying terraform resources based in existing terraform state in cloud storage`
   );
+
+  await moveFiles(terraformDirPath, oldStateFolder);
 
   await downloadFolder(cloudStorageClient, {
     folderName: repoName,
@@ -76100,6 +76103,8 @@ const destroyProcess = async (
   logger(
     `Done making tempory folders for applying terraform resources based in existing terraform state in cloud storage`
   );
+
+  await moveFiles(terraformDirPath, oldStateFolder);
 
   await downloadFolder(cloudStorageClient, {
     folderName: repoName,
@@ -76211,7 +76216,31 @@ const isEmptyDir = async (path) => {
   }
 };
 
-module.exports = { isEmptyDir };
+const moveFiles = async (oldFolder, newFolder) => {
+  let filePathsParsed = [];
+  let oldFilePaths = [];
+
+  for await (const filePath of getFiles(oldFolder)) {
+    try {
+      filePathsParsed.push(path.parse(filePath));
+      oldFilePaths.push(filePath);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  const newFilePaths = filePathsParsed.map((f) => {
+    const { root, base } = f;
+
+    return path.join(root, newFolder, base);
+  });
+
+  for (let i = 0; i < oldFilePaths.length; i++) {
+    fs.rename(oldFilePaths[i], newFilePaths[i], (e) => console.error(e));
+  }
+};
+
+module.exports = { isEmptyDir, moveFiles };
 
 
 /***/ }),

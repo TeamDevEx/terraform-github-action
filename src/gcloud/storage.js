@@ -16,7 +16,8 @@ async function uploadDirectory(
       const dirName = path.dirname(directoryPath);
       const destination = path.relative(dirName, filePath);
 
-      await bucketInstance.upload(filePath, { destination });
+      if (!(path.parse(filePath).ext === ".tf"))
+        await bucketInstance.upload(filePath, { destination });
 
       logger(`Successfully uploaded: ${filePath}`);
       successfulUploads++;

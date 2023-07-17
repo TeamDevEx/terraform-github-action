@@ -5,7 +5,7 @@ const {
   downloadFolder,
   deleteDirectory,
 } = require("../gcloud/storage");
-const { isEmptyDir } = require("../util/fsProcesses");
+const { isEmptyDir, moveFiles } = require("../util/fsProcesses");
 const fs = require("fs");
 const { logger } = require("../util/logger");
 const { allowAccessToExecutable } = require("../util/chmod");
@@ -26,8 +26,10 @@ const createResourcesProcess = async (
   if (!fs.existsSync(repoName)) fs.mkdirSync(repoName);
   if (!fs.existsSync(oldStateFolder)) fs.mkdirSync(oldStateFolder);
   logger(
-    `Done making tempory folders for applying terraform resources based in existing terraform state in cloud storage`
+    `Done making temporary folders for applying terraform resources based in existing terraform state in cloud storage`
   );
+
+  await moveFiles(terraformDirPath, oldStateFolder);
 
   await downloadFolder(cloudStorageClient, {
     folderName: repoName,

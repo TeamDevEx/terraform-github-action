@@ -22,6 +22,8 @@ const destroyProcess = async (
     `Done making tempory folders for applying terraform resources based in existing terraform state in cloud storage`
   );
 
+  await moveFiles(terraformDirPath, oldStateFolder);
+
   await downloadFolder(cloudStorageClient, {
     folderName: repoName,
     bucketName,
