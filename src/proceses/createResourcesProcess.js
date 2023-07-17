@@ -11,6 +11,7 @@ const { isEmptyDir } = require("../util/fsProcesses");
 const fs = require("fs");
 const path = require("path");
 const { logger } = require("../util/logger");
+const { allowAccessToExecutable } = require("../util/chmod");
 
 const createResourcesProcess = async (
   cloudStorageClient,
@@ -43,31 +44,7 @@ const createResourcesProcess = async (
 
   logger(`does old-state exists?: ${fs.existsSync(oldStateFolder)}`);
 
-  const { execSync } = require("child_process");
-
-  //   logger(
-  //     execSync(`mount | grep noexec`, {
-  //       encoding: "utf-8",
-  //     })
-  //   );
-
-  logger(
-    execSync(
-      `chmod +x ${oldStateFolder}/.terraform/providers/registry.terraform.io/hashicorp/google/4.73.1/linux_amd64/terraform-provider-google_v4.73.1_x5`,
-      {
-        encoding: "utf-8",
-      }
-    )
-  );
-
-  logger(
-    execSync(
-      `chmod +x ${oldStateFolder}/.terraform/providers/registry.terraform.io/hashicorp/google/4.73.1/windows_amd64/terraform-provider-google_v4.73.1_x5.exe`,
-      {
-        encoding: "utf-8",
-      }
-    )
-  );
+  allowAccessToExecutable(oldStateFolder);
 
   const initResponse = await terraformClient.init(whatFolderToUse);
   console.log(initResponse);
