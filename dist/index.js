@@ -71166,7 +71166,7 @@ const getProviderToUse = async () => {
       machine.includes(architecture.join(""))
     );
 
-    console.log(providerToUse)
+    console.log("providerToUse", providerToUse)
 
     return providerToUse
   };
