@@ -4,11 +4,14 @@ const {
   createBucket,
   downloadFolder,
   deleteDirectory,
-} = require("../gcloud/storage");
-const { isEmptyDir, moveFiles } = require("../util/fsProcesses");
+} = require("../gcloud");
+const {
+  allowAccessToExecutable,
+  isEmptyDir,
+  moveFiles,
+  logger,
+} = require("../util");
 const fs = require("fs");
-const { logger } = require("../util/logger");
-const { allowAccessToExecutable } = require("../util/chmod");
 
 const createResourcesProcess = async (
   cloudStorageClient,

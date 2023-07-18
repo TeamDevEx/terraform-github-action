@@ -1,9 +1,10 @@
-const { logger } = require("../util/logger");
+const { logger } = require("../util");
+const { Terraform } = require("../classes");
+const { Storage } = require("@google-cloud/storage");
+
 const loadClients = () => {
   logger(`Loading clients for cloud storage and terraform`);
 
-  const { Terraform } = require("../classes/CTerraform");
-  const { Storage } = require("@google-cloud/storage");
   const terraform = new Terraform();
   const storage = new Storage();
 

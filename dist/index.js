@@ -75847,6 +75847,16 @@ module.exports = { Terraform };
 
 /***/ }),
 
+/***/ 3835:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const { Terraform } = __nccwpck_require__(6494);
+
+module.exports = { Terraform };
+
+
+/***/ }),
+
 /***/ 2095:
 /***/ ((module) => {
 
@@ -75857,6 +75867,28 @@ const terraformDirPath = "terraform";
 const repoName = "sample-repo-to-use-gh-action";
 
 module.exports = { BUCKET_NAME, OLD_STATE_FOLDER, terraformDirPath, repoName };
+
+
+/***/ }),
+
+/***/ 5534:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const {
+  uploadDirectory,
+  doesBucketExist,
+  createBucket,
+  downloadFolder,
+  deleteDirectory,
+} = __nccwpck_require__(1179);
+
+module.exports = {
+  uploadDirectory,
+  doesBucketExist,
+  createBucket,
+  downloadFolder,
+  deleteDirectory,
+};
 
 
 /***/ }),
@@ -75972,15 +76004,26 @@ module.exports = {
 
 /***/ }),
 
+/***/ 3077:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const { loadClients } = __nccwpck_require__(6784);
+
+module.exports = { loadClients };
+
+
+/***/ }),
+
 /***/ 6784:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-const { logger } = __nccwpck_require__(5928);
+const { logger } = __nccwpck_require__(1505);
+const { Terraform } = __nccwpck_require__(3835);
+const { Storage } = __nccwpck_require__(1430);
+
 const loadClients = () => {
   logger(`Loading clients for cloud storage and terraform`);
 
-  const { Terraform } = __nccwpck_require__(6494);
-  const { Storage } = __nccwpck_require__(1430);
   const terraform = new Terraform();
   const storage = new Storage();
 
@@ -76002,11 +76045,14 @@ const {
   createBucket,
   downloadFolder,
   deleteDirectory,
-} = __nccwpck_require__(1179);
-const { isEmptyDir, moveFiles } = __nccwpck_require__(7647);
+} = __nccwpck_require__(5534);
+const {
+  allowAccessToExecutable,
+  isEmptyDir,
+  moveFiles,
+  logger,
+} = __nccwpck_require__(1505);
 const fs = __nccwpck_require__(7147);
-const { logger } = __nccwpck_require__(5928);
-const { allowAccessToExecutable } = __nccwpck_require__(5549);
 
 const createResourcesProcess = async (
   cloudStorageClient,
@@ -76086,15 +76132,14 @@ module.exports = { createResourcesProcess };
 /***/ 7703:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
+const { downloadFolder, deleteDirectory } = __nccwpck_require__(5534);
 const {
-  doesBucketExist,
-  downloadFolder,
-  deleteDirectory,
-} = __nccwpck_require__(1179);
-const { isEmptyDir, moveFiles } = __nccwpck_require__(7647);
+  allowAccessToExecutable,
+  isEmptyDir,
+  moveFiles,
+  logger,
+} = __nccwpck_require__(1505);
 const fs = __nccwpck_require__(7147);
-const { logger } = __nccwpck_require__(5928);
-const { allowAccessToExecutable } = __nccwpck_require__(5549);
 
 const destroyProcess = async (
   cloudStorageClient,
@@ -76150,6 +76195,17 @@ const destroyProcess = async (
 };
 
 module.exports = { destroyProcess };
+
+
+/***/ }),
+
+/***/ 7359:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const { createResourcesProcess } = __nccwpck_require__(3371);
+const { destroyProcess } = __nccwpck_require__(7703);
+
+module.exports = { createResourcesProcess, destroyProcess };
 
 
 /***/ }),
@@ -76267,6 +76323,24 @@ const moveFiles = async (oldFolder, newFolder) => {
 };
 
 module.exports = { isEmptyDir, moveFiles, getFiles };
+
+
+/***/ }),
+
+/***/ 1505:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const { allowAccessToExecutable } = __nccwpck_require__(5549);
+const { isEmptyDir, moveFiles, getFiles } = __nccwpck_require__(7647);
+const { logger } = __nccwpck_require__(5928);
+
+module.exports = {
+  allowAccessToExecutable,
+  isEmptyDir,
+  moveFiles,
+  getFiles,
+  logger,
+};
 
 
 /***/ }),
@@ -76540,9 +76614,8 @@ module.exports = JSON.parse('[[[0,44],"disallowed_STD3_valid"],[[45,46],"valid"]
 var __webpack_exports__ = {};
 // This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
 (() => {
-const { loadClients } = __nccwpck_require__(6784);
-const { createResourcesProcess } = __nccwpck_require__(3371);
-const { destroyProcess } = __nccwpck_require__(7703);
+const { loadClients } = __nccwpck_require__(3077);
+const { createResourcesProcess, destroyProcess } = __nccwpck_require__(7359);
 const { BUCKET_NAME, OLD_STATE_FOLDER } = __nccwpck_require__(2095);
 const { getInput } = __nccwpck_require__(3722);
 const github = __nccwpck_require__(8408);
@@ -76555,7 +76628,7 @@ const { terraform: terraformClient, storage: cloudStorageClient } =
   loadClients();
 
 const run = async () => {
-  if (toDestroy === 'true') {
+  if (toDestroy === "true") {
     await destroyProcess(cloudStorageClient, terraformClient, {
       bucketName: BUCKET_NAME,
       oldStateFolder: OLD_STATE_FOLDER,
