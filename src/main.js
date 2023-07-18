@@ -4,7 +4,7 @@ const {
   createBucket,
   downloadFolder,
   deleteDirectory,
-} = require("../gcloud");
+} = require("./gcloud");
 const {
   allowAccessToExecutable,
   isEmptyDir,
