@@ -156,6 +156,616 @@ module.exports = {
 
 /***/ }),
 
+/***/ 2236:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Terraform = void 0;
+const child_process_1 = __nccwpck_require__(2081);
+const logger_1 = __nccwpck_require__(7675);
+class Terraform {
+    constructor() {
+        this.init = (relativePath) => {
+            return (0, child_process_1.execSync)(`terraform -chdir=${relativePath} init`, {
+                encoding: "utf-8",
+            });
+        };
+        this.plan = (relativePath) => {
+            return (0, child_process_1.execSync)(`terraform -chdir=${relativePath} plan`, {
+                encoding: "utf-8",
+            });
+        };
+        this.planDestroy = (relativePath) => {
+            return (0, child_process_1.execSync)(`terraform -chdir=${relativePath} plan -destroy`, {
+                encoding: "utf-8",
+            });
+        };
+        this.apply = (relativePath) => {
+            return (0, child_process_1.execSync)(`terraform -chdir=${relativePath} apply -auto-approve`, {
+                encoding: "utf-8",
+            });
+        };
+        this.destroy = (relativePath) => {
+            (0, logger_1.logger)("Deleting terraform resources");
+            (0, child_process_1.execSync)(`terraform -chdir=${relativePath} apply -destroy -auto-approve`, {
+                encoding: "utf-8",
+            });
+            (0, logger_1.logger)("Resources deleted!");
+        };
+    }
+}
+exports.Terraform = Terraform;
+
+
+/***/ }),
+
+/***/ 6586:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Terraform = void 0;
+const Terraform_1 = __nccwpck_require__(2236);
+Object.defineProperty(exports, "Terraform", ({ enumerable: true, get: function () { return Terraform_1.Terraform; } }));
+
+
+/***/ }),
+
+/***/ 7719:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.OLD_STATE_FOLDER = exports.BUCKET_NAME = void 0;
+const BUCKET_NAME = "terraform-config-states";
+exports.BUCKET_NAME = BUCKET_NAME;
+const OLD_STATE_FOLDER = "old-state";
+exports.OLD_STATE_FOLDER = OLD_STATE_FOLDER;
+
+
+/***/ }),
+
+/***/ 5424:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.deleteDirectory = exports.downloadFolder = exports.createBucket = exports.doesBucketExist = exports.uploadDirectory = void 0;
+const storage_1 = __nccwpck_require__(1783);
+Object.defineProperty(exports, "uploadDirectory", ({ enumerable: true, get: function () { return storage_1.uploadDirectory; } }));
+Object.defineProperty(exports, "doesBucketExist", ({ enumerable: true, get: function () { return storage_1.doesBucketExist; } }));
+Object.defineProperty(exports, "createBucket", ({ enumerable: true, get: function () { return storage_1.createBucket; } }));
+Object.defineProperty(exports, "downloadFolder", ({ enumerable: true, get: function () { return storage_1.downloadFolder; } }));
+Object.defineProperty(exports, "deleteDirectory", ({ enumerable: true, get: function () { return storage_1.deleteDirectory; } }));
+
+
+/***/ }),
+
+/***/ 1783:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __asyncValues = (this && this.__asyncValues) || function (o) {
+    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+    var m = o[Symbol.asyncIterator], i;
+    return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
+    function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
+    function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.deleteDirectory = exports.downloadFolder = exports.createBucket = exports.doesBucketExist = exports.uploadDirectory = void 0;
+const fs_1 = __importDefault(__nccwpck_require__(7147));
+const path_1 = __importDefault(__nccwpck_require__(1017));
+const logger_1 = __nccwpck_require__(7675);
+const fsProcesses_1 = __nccwpck_require__(1468);
+function uploadDirectory(cloudStorageClient, { directoryPath, bucketName }) {
+    var _a, e_1, _b, _c;
+    return __awaiter(this, void 0, void 0, function* () {
+        (0, logger_1.logger)(`Uploading tf config state to cloud storge bucket`);
+        const bucketInstance = cloudStorageClient.bucket(bucketName);
+        let successfulUploads = 0;
+        try {
+            for (var _d = true, _e = __asyncValues((0, fsProcesses_1.getFiles)(directoryPath)), _f; _f = yield _e.next(), _a = _f.done, !_a; _d = true) {
+                _c = _f.value;
+                _d = false;
+                const filePath = _c;
+                try {
+                    const dirName = path_1.default.dirname(directoryPath);
+                    const destination = path_1.default.relative(dirName, filePath);
+                    if (!(path_1.default.parse(filePath).ext === ".tf"))
+                        yield bucketInstance.upload(filePath, { destination });
+                    (0, logger_1.logger)(`Successfully uploaded: ${filePath}`);
+                    successfulUploads++;
+                }
+                catch (e) {
+                    console.error(`Error uploading ${filePath}:`, e);
+                }
+            }
+        }
+        catch (e_1_1) { e_1 = { error: e_1_1 }; }
+        finally {
+            try {
+                if (!_d && !_a && (_b = _e.return)) yield _b.call(_e);
+            }
+            finally { if (e_1) throw e_1.error; }
+        }
+        (0, logger_1.logger)(`${successfulUploads} files uploaded to ${bucketName} successfully.`);
+    });
+}
+exports.uploadDirectory = uploadDirectory;
+function doesBucketExist(cloudStorageClient, bucketName) {
+    return __awaiter(this, void 0, void 0, function* () {
+        (0, logger_1.logger)(`Checking if bucket exists`);
+        const [buckets] = yield cloudStorageClient.getBuckets();
+        const isThereExistingBucket = buckets.find((bucket) => {
+            return bucketName === bucket.name;
+        });
+        return !!isThereExistingBucket;
+    });
+}
+exports.doesBucketExist = doesBucketExist;
+function createBucket(cloudStorageClient, bucketName) {
+    return __awaiter(this, void 0, void 0, function* () {
+        (0, logger_1.logger)(`Creating bucket: ${bucketName}`);
+        const [bucket] = yield cloudStorageClient.createBucket(bucketName, {
+            location: "US",
+            storageClass: "STANDARD",
+        });
+        (0, logger_1.logger)(`Bucket ${bucket.name} created.`);
+    });
+}
+exports.createBucket = createBucket;
+function downloadFolder(cloudStorageClient, { directoryPath, bucketName }) {
+    return __awaiter(this, void 0, void 0, function* () {
+        (0, logger_1.logger)(`Downloading folder for tf config states for this repository: ${directoryPath}`);
+        const bucketInstance = cloudStorageClient.bucket(bucketName);
+        const [files] = yield bucketInstance.getFiles({ prefix: directoryPath });
+        for (const file of files) {
+            const dirPath = path_1.default.parse(file.name).dir.split("/");
+            dirPath[0] = "old-state";
+            const newDirPath = dirPath.join("/");
+            const newFilePath = newDirPath + "/" + path_1.default.basename(file.name);
+            if (!fs_1.default.existsSync(newDirPath))
+                fs_1.default.mkdirSync(newDirPath, { recursive: true });
+            yield bucketInstance.file(file.name).download({
+                destination: path_1.default.join(newFilePath),
+            });
+            (0, logger_1.logger)(`gs://${bucketName}/${file.name} downloaded to ${newFilePath}.`);
+        }
+    });
+}
+exports.downloadFolder = downloadFolder;
+function deleteDirectory(cloudStorageClient, { bucketName, directoryPath }) {
+    return __awaiter(this, void 0, void 0, function* () {
+        (0, logger_1.logger)(`Deleting tf config state in cloud storge bucket: ${bucketName}`);
+        const bucketInstance = cloudStorageClient.bucket(bucketName);
+        const [files] = yield bucketInstance.getFiles();
+        const dirFiles = files.filter((f) => f.metadata.id.includes(directoryPath + "/"));
+        for (const dirFile of dirFiles) {
+            yield dirFile.delete();
+            (0, logger_1.logger)(`Deleted ${dirFile.name}`);
+        }
+        (0, logger_1.logger)(`Done with directory deletion for ${directoryPath} in cloud bucket ${bucketName}`);
+    });
+}
+exports.deleteDirectory = deleteDirectory;
+
+
+/***/ }),
+
+/***/ 1086:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const load_dependencies_1 = __nccwpck_require__(5608);
+const constant_1 = __nccwpck_require__(7719);
+const main_1 = __nccwpck_require__(6693);
+const load_dependencies_2 = __nccwpck_require__(5608);
+const { terraform: terraformClient, storage: cloudStorageClient } = (0, load_dependencies_1.loadClients)();
+const { terraformDirPath, toDestroy, repoName } = (0, load_dependencies_2.loadWorkflowVariables)();
+const run = () => __awaiter(void 0, void 0, void 0, function* () {
+    yield (0, main_1.main)(cloudStorageClient, terraformClient, {
+        repoName,
+        terraformDirPath,
+        bucketName: constant_1.BUCKET_NAME,
+        oldStateFolder: constant_1.OLD_STATE_FOLDER,
+        toDestroy,
+    });
+});
+run();
+
+
+/***/ }),
+
+/***/ 5608:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.loadWorkflowVariables = exports.loadClients = void 0;
+const loadClients_1 = __nccwpck_require__(1155);
+Object.defineProperty(exports, "loadClients", ({ enumerable: true, get: function () { return loadClients_1.loadClients; } }));
+const loadWorkflowVariables_1 = __nccwpck_require__(9029);
+Object.defineProperty(exports, "loadWorkflowVariables", ({ enumerable: true, get: function () { return loadWorkflowVariables_1.loadWorkflowVariables; } }));
+
+
+/***/ }),
+
+/***/ 1155:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.loadClients = void 0;
+const util_1 = __nccwpck_require__(9060);
+const classes_1 = __nccwpck_require__(6586);
+const storage_1 = __nccwpck_require__(1430);
+const loadClients = () => {
+    (0, util_1.logger)(`Loading clients for cloud storage and terraform`);
+    const terraform = new classes_1.Terraform();
+    const storage = new storage_1.Storage();
+    (0, util_1.logger)(`Done loading clients for cloud storage and terraform`);
+    return { terraform, storage };
+};
+exports.loadClients = loadClients;
+
+
+/***/ }),
+
+/***/ 9029:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.loadWorkflowVariables = void 0;
+const core_1 = __nccwpck_require__(3722);
+const github_1 = __importDefault(__nccwpck_require__(8408));
+const loadWorkflowVariables = () => {
+    const terraformDirPath = (0, core_1.getInput)("terraform_dir_path", { required: true });
+    const toDestroy = (0, core_1.getInput)("to_destroy");
+    const repoName = github_1.default.context.repo.repo;
+    return { terraformDirPath, toDestroy, repoName };
+};
+exports.loadWorkflowVariables = loadWorkflowVariables;
+
+
+/***/ }),
+
+/***/ 6693:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.main = void 0;
+const gcloud_1 = __nccwpck_require__(5424);
+const util_1 = __nccwpck_require__(9060);
+const fs_1 = __importDefault(__nccwpck_require__(7147));
+const main = (cloudStorageClient, terraformClient, { repoName, terraformDirPath, bucketName, oldStateFolder, toDestroy, }) => __awaiter(void 0, void 0, void 0, function* () {
+    const isDestroy = toDestroy === "true"; // what we get from getInput is not boolean it seems
+    const isBucketExist = yield (0, gcloud_1.doesBucketExist)(cloudStorageClient, bucketName);
+    (0, util_1.logger)(`Making tempory folders for applying terraform resources based in existing terraform state in cloud storage`);
+    if (!isBucketExist)
+        yield (0, gcloud_1.createBucket)(cloudStorageClient, bucketName);
+    if (!fs_1.default.existsSync(repoName))
+        fs_1.default.mkdirSync(repoName);
+    if (!fs_1.default.existsSync(oldStateFolder))
+        fs_1.default.mkdirSync(oldStateFolder);
+    (0, util_1.logger)(`Done making temporary folders for applying terraform resources based in existing terraform state in cloud storage`);
+    yield (0, gcloud_1.downloadFolder)(cloudStorageClient, {
+        directoryPath: repoName,
+        bucketName,
+    });
+    fs_1.default.cpSync(terraformDirPath, repoName, { recursive: true });
+    const isOldStateEmpty = yield (0, util_1.isEmptyDir)(oldStateFolder);
+    (0, util_1.logger)(`Is the old-state directory empty: ${isOldStateEmpty}`);
+    const whatFolderToUse = isOldStateEmpty ? repoName : oldStateFolder;
+    (0, util_1.logger)(`Does old-state exists?: ${fs_1.default.existsSync(oldStateFolder)}`);
+    if (!isOldStateEmpty)
+        yield (0, util_1.allowAccessToExecutable)(oldStateFolder);
+    yield (0, util_1.moveFiles)(terraformDirPath, oldStateFolder);
+    (0, util_1.logger)(`Initializing terraform files...`);
+    const initResponse = terraformClient.init(whatFolderToUse);
+    console.log(initResponse);
+    (0, util_1.logger)(`Done initializing terraform files...`);
+    (0, util_1.logger)(`Running terraform plan...`);
+    const planResponse = !isDestroy
+        ? terraformClient.plan(whatFolderToUse)
+        : terraformClient.planDestroy(whatFolderToUse);
+    console.log(planResponse);
+    (0, util_1.logger)(`Done running terraform plan...`);
+    (0, util_1.logger)(`Running terraform ${!isDestroy ? "apply" : "destroy"}...`);
+    const applyResponse = !isDestroy
+        ? terraformClient.apply(whatFolderToUse)
+        : terraformClient.destroy(whatFolderToUse);
+    console.log(applyResponse);
+    (0, util_1.logger)(`Done running terraform ${!isDestroy ? "apply" : "destroy"}...`);
+    if (!isOldStateEmpty && !isDestroy)
+        fs_1.default.cpSync(oldStateFolder, repoName, { recursive: true });
+    if (!isOldStateEmpty)
+        yield (0, gcloud_1.deleteDirectory)(cloudStorageClient, {
+            bucketName,
+            directoryPath: repoName,
+        });
+    if (!isDestroy)
+        yield (0, gcloud_1.uploadDirectory)(cloudStorageClient, {
+            directoryPath: repoName,
+            bucketName,
+        });
+});
+exports.main = main;
+
+
+/***/ }),
+
+/***/ 5693:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __asyncValues = (this && this.__asyncValues) || function (o) {
+    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+    var m = o[Symbol.asyncIterator], i;
+    return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
+    function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
+    function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.allowAccessToExecutable = void 0;
+const child_process_1 = __nccwpck_require__(2081);
+const fsProcesses_1 = __nccwpck_require__(1468);
+const logger_1 = __nccwpck_require__(7675);
+const getProviderToUse = (pathToExectuable) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, e_1, _b, _c;
+    let providerToUse;
+    let architecture = process.arch.split("");
+    let machineArchitectures = [];
+    architecture.shift();
+    const machineArchitecture = process.platform.includes("win")
+        ? "windows"
+        : process.platform;
+    try {
+        for (var _d = true, _e = __asyncValues((0, fsProcesses_1.getFiles)(pathToExectuable)), _f; _f = yield _e.next(), _a = _f.done, !_a; _d = true) {
+            _c = _f.value;
+            _d = false;
+            const filePath = _c;
+            try {
+                if (filePath.includes(machineArchitecture)) {
+                    machineArchitectures.push(filePath);
+                }
+            }
+            catch (e) {
+                console.error(e);
+            }
+        }
+    }
+    catch (e_1_1) { e_1 = { error: e_1_1 }; }
+    finally {
+        try {
+            if (!_d && !_a && (_b = _e.return)) yield _b.call(_e);
+        }
+        finally { if (e_1) throw e_1.error; }
+    }
+    providerToUse = machineArchitectures.find((machine) => machine.includes(architecture.join("")));
+    return providerToUse;
+});
+// allows access to the terraform provider executable file
+const allowAccessToExecutable = (pathToExectuable) => __awaiter(void 0, void 0, void 0, function* () {
+    const providerToUse = yield getProviderToUse(pathToExectuable);
+    (0, logger_1.logger)(`Allowing access for executable: ${providerToUse}`);
+    console.log((0, child_process_1.execSync)(`chmod +x ${providerToUse}`, {
+        encoding: "utf-8",
+    }));
+});
+exports.allowAccessToExecutable = allowAccessToExecutable;
+
+
+/***/ }),
+
+/***/ 1468:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __await = (this && this.__await) || function (v) { return this instanceof __await ? (this.v = v, this) : new __await(v); }
+var __asyncValues = (this && this.__asyncValues) || function (o) {
+    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+    var m = o[Symbol.asyncIterator], i;
+    return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
+    function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
+    function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
+};
+var __asyncDelegator = (this && this.__asyncDelegator) || function (o) {
+    var i, p;
+    return i = {}, verb("next"), verb("throw", function (e) { throw e; }), verb("return"), i[Symbol.iterator] = function () { return this; }, i;
+    function verb(n, f) { i[n] = o[n] ? function (v) { return (p = !p) ? { value: __await(o[n](v)), done: false } : f ? f(v) : v; } : f; }
+};
+var __asyncGenerator = (this && this.__asyncGenerator) || function (thisArg, _arguments, generator) {
+    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+    var g = generator.apply(thisArg, _arguments || []), i, q = [];
+    return i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i;
+    function verb(n) { if (g[n]) i[n] = function (v) { return new Promise(function (a, b) { q.push([n, v, a, b]) > 1 || resume(n, v); }); }; }
+    function resume(n, v) { try { step(g[n](v)); } catch (e) { settle(q[0][3], e); } }
+    function step(r) { r.value instanceof __await ? Promise.resolve(r.value.v).then(fulfill, reject) : settle(q[0][2], r); }
+    function fulfill(value) { resume("next", value); }
+    function reject(value) { resume("throw", value); }
+    function settle(f, v) { if (f(v), q.shift(), q.length) resume(q[0][0], q[0][1]); }
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.getFiles = exports.moveFiles = exports.isEmptyDir = void 0;
+const fs_1 = __nccwpck_require__(7147);
+const path_1 = __importDefault(__nccwpck_require__(1017));
+const util_1 = __nccwpck_require__(3837);
+const fs_2 = __importDefault(__nccwpck_require__(7147));
+const readdir = (0, util_1.promisify)(fs_2.default.readdir);
+const stat = (0, util_1.promisify)(fs_2.default.stat);
+const isEmptyDir = (path) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const directory = yield fs_1.promises.opendir(path);
+        const entry = yield directory.read();
+        yield directory.close();
+        return entry === null;
+    }
+    catch (error) {
+        return false;
+    }
+});
+exports.isEmptyDir = isEmptyDir;
+function getFiles(directory = ".") {
+    return __asyncGenerator(this, arguments, function* getFiles_1() {
+        for (const file of yield __await(readdir(directory))) {
+            const fullPath = path_1.default.join(directory, file);
+            const stats = yield __await(stat(fullPath));
+            if (stats.isDirectory()) {
+                yield __await(yield* __asyncDelegator(__asyncValues(getFiles(fullPath))));
+            }
+            if (stats.isFile()) {
+                yield yield __await(fullPath);
+            }
+        }
+    });
+}
+exports.getFiles = getFiles;
+const moveFiles = (oldFolder, newFolder) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, e_1, _b, _c;
+    let filePathsParsed = [];
+    let oldFilePaths = [];
+    try {
+        for (var _d = true, _e = __asyncValues(getFiles(oldFolder)), _f; _f = yield _e.next(), _a = _f.done, !_a; _d = true) {
+            _c = _f.value;
+            _d = false;
+            const filePath = _c;
+            try {
+                filePathsParsed.push(path_1.default.parse(filePath));
+                oldFilePaths.push(filePath);
+            }
+            catch (e) {
+                console.error(e);
+            }
+        }
+    }
+    catch (e_1_1) { e_1 = { error: e_1_1 }; }
+    finally {
+        try {
+            if (!_d && !_a && (_b = _e.return)) yield _b.call(_e);
+        }
+        finally { if (e_1) throw e_1.error; }
+    }
+    const newFilePaths = filePathsParsed.map((f) => {
+        const { root, base } = f;
+        return path_1.default.join(root, newFolder, base);
+    });
+    for (let i = 0; i < oldFilePaths.length; i++) {
+        fs_2.default.copyFileSync(oldFilePaths[i], newFilePaths[i]);
+    }
+});
+exports.moveFiles = moveFiles;
+
+
+/***/ }),
+
+/***/ 9060:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.logger = exports.getFiles = exports.moveFiles = exports.isEmptyDir = exports.allowAccessToExecutable = void 0;
+const chmod_1 = __nccwpck_require__(5693);
+Object.defineProperty(exports, "allowAccessToExecutable", ({ enumerable: true, get: function () { return chmod_1.allowAccessToExecutable; } }));
+const fsProcesses_1 = __nccwpck_require__(1468);
+Object.defineProperty(exports, "isEmptyDir", ({ enumerable: true, get: function () { return fsProcesses_1.isEmptyDir; } }));
+Object.defineProperty(exports, "moveFiles", ({ enumerable: true, get: function () { return fsProcesses_1.moveFiles; } }));
+Object.defineProperty(exports, "getFiles", ({ enumerable: true, get: function () { return fsProcesses_1.getFiles; } }));
+const logger_1 = __nccwpck_require__(7675);
+Object.defineProperty(exports, "logger", ({ enumerable: true, get: function () { return logger_1.logger; } }));
+
+
+/***/ }),
+
+/***/ 7675:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.logger = void 0;
+const logger = (log) => {
+    console.log(`${new Date().toISOString()} --- ${log}`);
+};
+exports.logger = logger;
+
+
+/***/ }),
+
 /***/ 140:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -75800,493 +76410,6 @@ module.exports = Queue;
 
 /***/ }),
 
-/***/ 6494:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const { execSync } = __nccwpck_require__(2081);
-const { logger } = __nccwpck_require__(5928);
-
-class Terraform {
-  constructor() {}
-
-  init = (relativePath) => {
-    return execSync(`terraform -chdir=${relativePath} init`, {
-      encoding: "utf-8",
-    });
-  };
-
-  plan = (relativePath) => {
-    return execSync(`terraform -chdir=${relativePath} plan`, {
-      encoding: "utf-8",
-    });
-  };
-
-  planDestroy = (relativePath) => {
-    return execSync(`terraform -chdir=${relativePath} plan -destroy`, {
-      encoding: "utf-8",
-    });
-  };
-
-  apply = (relativePath) => {
-    return execSync(`terraform -chdir=${relativePath} apply -auto-approve`, {
-      encoding: "utf-8",
-    });
-  };
-
-  destroy = (relativePath) => {
-    logger("Deleting terraform resources");
-    execSync(`terraform -chdir=${relativePath} apply -destroy -auto-approve`, {
-      encoding: "utf-8",
-    });
-    logger("Resources deleted!");
-  };
-}
-
-module.exports = { Terraform };
-
-
-/***/ }),
-
-/***/ 3835:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const { Terraform } = __nccwpck_require__(6494);
-
-module.exports = { Terraform };
-
-
-/***/ }),
-
-/***/ 2095:
-/***/ ((module) => {
-
-const BUCKET_NAME = "terraform-config-states";
-const OLD_STATE_FOLDER = "old-state";
-
-const terraformDirPath = "terraform";
-const repoName = "sample-repo-to-use-gh-action";
-
-module.exports = { BUCKET_NAME, OLD_STATE_FOLDER, terraformDirPath, repoName };
-
-
-/***/ }),
-
-/***/ 5534:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const {
-  uploadDirectory,
-  doesBucketExist,
-  createBucket,
-  downloadFolder,
-  deleteDirectory,
-} = __nccwpck_require__(1179);
-
-module.exports = {
-  uploadDirectory,
-  doesBucketExist,
-  createBucket,
-  downloadFolder,
-  deleteDirectory,
-};
-
-
-/***/ }),
-
-/***/ 1179:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const fs = __nccwpck_require__(7147);
-const path = __nccwpck_require__(1017);
-const { logger } = __nccwpck_require__(5928);
-const { getFiles } = __nccwpck_require__(7647);
-
-async function uploadDirectory(
-  cloudStorageClient,
-  { directoryPath, bucketName }
-) {
-  logger(`Uploading tf config state to cloud storge bucket`);
-  const bucketInstance = cloudStorageClient.bucket(bucketName);
-  let successfulUploads = 0;
-
-  for await (const filePath of getFiles(directoryPath)) {
-    try {
-      const dirName = path.dirname(directoryPath);
-      const destination = path.relative(dirName, filePath);
-
-      if (!(path.parse(filePath).ext === ".tf"))
-        await bucketInstance.upload(filePath, { destination });
-
-      logger(`Successfully uploaded: ${filePath}`);
-      successfulUploads++;
-    } catch (e) {
-      console.error(`Error uploading ${filePath}:`, e);
-    }
-  }
-
-  logger(`${successfulUploads} files uploaded to ${bucketName} successfully.`);
-}
-
-async function doesBucketExist(cloudStorageClient, { bucketName }) {
-  logger(`Checking if bucket exists`);
-  const [buckets] = await cloudStorageClient.getBuckets();
-
-  const isThereExistingBucket = buckets.find((bucket) => {
-    return bucketName === bucket.name;
-  });
-
-  return !!isThereExistingBucket;
-}
-
-async function createBucket(cloudStorageClient, { bucketName }) {
-  logger(`Creating bucket: ${bucketName}`);
-  const [bucket] = await cloudStorageClient.createBucket(bucketName, {
-    location: "US",
-    storageClass: "STANDARD",
-  });
-
-  logger(`Bucket ${bucket.name} created.`);
-}
-
-async function downloadFolder(cloudStorgae, { folderName, bucketName }) {
-  logger(
-    `Downloading folder for tf config states for this repository: ${folderName}`
-  );
-  const bucketInstance = cloudStorgae.bucket(bucketName);
-  const [files] = await bucketInstance.getFiles({ prefix: folderName });
-
-  for (const file of files) {
-    const dirPath = path.parse(file.name).dir.split("/");
-    dirPath[0] = "old-state";
-
-    const newDirPath = dirPath.join("/");
-    const newFilePath = newDirPath + "/" + path.basename(file.name);
-
-    if (!fs.existsSync(newDirPath))
-      fs.mkdirSync(newDirPath, { recursive: true });
-
-    await bucketInstance.file(file.name).download({
-      destination: path.join(newFilePath),
-    });
-
-    logger(`gs://${bucketName}/${file.name} downloaded to ${newFilePath}.`);
-  }
-}
-
-async function deleteDirectory(cloudStorageClient, { bucketName, folderName }) {
-  logger(`Deleting tf config state in cloud storge bucket: ${bucketName}`);
-  const bucketInstance = cloudStorageClient.bucket(bucketName);
-
-  const [files] = await bucketInstance.getFiles();
-
-  const dirFiles = files.filter((f) =>
-    f.metadata.id.includes(folderName + "/")
-  );
-
-  for (const dirFile of dirFiles) {
-    await dirFile.delete();
-    logger(`Deleted ${dirFile.name}`);
-  }
-
-  logger(
-    `Done with directory deletion for ${folderName} in cloud bucket ${bucketName}`
-  );
-}
-
-module.exports = {
-  uploadDirectory,
-  doesBucketExist,
-  createBucket,
-  downloadFolder,
-  deleteDirectory,
-};
-
-
-/***/ }),
-
-/***/ 3077:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const { loadClients } = __nccwpck_require__(6784);
-
-module.exports = { loadClients };
-
-
-/***/ }),
-
-/***/ 6784:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const { logger } = __nccwpck_require__(1505);
-const { Terraform } = __nccwpck_require__(3835);
-const { Storage } = __nccwpck_require__(1430);
-
-const loadClients = () => {
-  logger(`Loading clients for cloud storage and terraform`);
-
-  const terraform = new Terraform();
-  const storage = new Storage();
-
-  logger(`Done loading clients for cloud storage and terraform`);
-  return { terraform, storage };
-};
-
-module.exports = { loadClients };
-
-
-/***/ }),
-
-/***/ 2748:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const {
-  uploadDirectory,
-  doesBucketExist,
-  createBucket,
-  downloadFolder,
-  deleteDirectory,
-} = __nccwpck_require__(5534);
-const {
-  allowAccessToExecutable,
-  isEmptyDir,
-  moveFiles,
-  logger,
-} = __nccwpck_require__(1505);
-const fs = __nccwpck_require__(7147);
-
-const main = async (
-  cloudStorageClient,
-  terraformClient,
-  { repoName, terraformDirPath, bucketName, oldStateFolder, toDestroy }
-) => {
-  const isDestroy = toDestroy === "true"; // what we get from getInput is not boolean it seems
-
-  const isBucketExist = await doesBucketExist(cloudStorageClient, {
-    bucketName,
-  });
-
-  logger(
-    `Making tempory folders for applying terraform resources based in existing terraform state in cloud storage`
-  );
-  if (!isBucketExist) await createBucket(cloudStorageClient, { bucketName });
-  if (!fs.existsSync(repoName)) fs.mkdirSync(repoName);
-  if (!fs.existsSync(oldStateFolder)) fs.mkdirSync(oldStateFolder);
-  logger(
-    `Done making temporary folders for applying terraform resources based in existing terraform state in cloud storage`
-  );
-
-  await downloadFolder(cloudStorageClient, {
-    folderName: repoName,
-    bucketName,
-  });
-
-  fs.cpSync(terraformDirPath, repoName, { recursive: true });
-
-  const isOldStateEmpty = await isEmptyDir(oldStateFolder);
-  logger(`Is the old-state directory empty: ${isOldStateEmpty}`);
-  const whatFolderToUse = isOldStateEmpty ? repoName : oldStateFolder;
-
-  logger(`Does old-state exists?: ${fs.existsSync(oldStateFolder)}`);
-
-  if (!isOldStateEmpty) await allowAccessToExecutable(oldStateFolder);
-
-  await moveFiles(terraformDirPath, oldStateFolder);
-
-  logger(`Initializing terraform files...`);
-  const initResponse = await terraformClient.init(whatFolderToUse);
-  console.log(initResponse);
-  logger(`Done initializing terraform files...`);
-
-  logger(`Running terraform plan...`);
-  const planResponse = !isDestroy
-    ? await terraformClient.plan(whatFolderToUse, {
-        autoApprove: true,
-      })
-    : await terraformClient.planDestroy(whatFolderToUse, {
-        autoApprove: true,
-      });
-  console.log(planResponse);
-  logger(`Done running terraform plan...`);
-
-  logger(`Running terraform ${!isDestroy ? "apply" : "destroy"}...`);
-  const applyResponse = !isDestroy
-    ? await terraformClient.apply(whatFolderToUse, {
-        autoApprove: true,
-      })
-    : await terraformClient.destroy(whatFolderToUse, {
-        autoApprove: true,
-      });
-  console.log(applyResponse);
-  logger(`Done running terraform ${!isDestroy ? "apply" : "destroy"}...`);
-
-  if (!isOldStateEmpty && !isDestroy)
-    fs.cpSync(oldStateFolder, repoName, { recursive: true });
-
-  if (!isOldStateEmpty)
-    await deleteDirectory(cloudStorageClient, {
-      bucketName,
-      folderName: repoName,
-    });
-
-  if (!isDestroy)
-    await uploadDirectory(cloudStorageClient, {
-      directoryPath: repoName,
-      bucketName,
-    });
-};
-
-module.exports = { main };
-
-
-/***/ }),
-
-/***/ 5549:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const { execSync } = __nccwpck_require__(2081);
-const { getFiles } = __nccwpck_require__(7647);
-const { logger } = __nccwpck_require__(5928);
-
-const getProviderToUse = async () => {
-  let providerToUse;
-  let architecture = process.arch.split("");
-  let machineArchitectures = [];
-
-  architecture.shift();
-
-  const machineArchitecture = process.platform.includes("win")
-    ? "windows"
-    : process.platform;
-
-  for await (const filePath of getFiles("old-state")) {
-    try {
-      if (filePath.includes(machineArchitecture)) {
-        machineArchitectures.push(filePath);
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  }
-
-  providerToUse = machineArchitectures.find((machine) =>
-    machine.includes(architecture.join(""))
-  );
-
-  return providerToUse;
-};
-
-// allows access to the terraform provider executable file
-const allowAccessToExecutable = async (pathToExectuable) => {
-  const providerToUse = await getProviderToUse(pathToExectuable);
-  logger(`Allowing access for executable: ${providerToUse}`);
-  console.log(
-    execSync(`chmod +x ${providerToUse}`, {
-      encoding: "utf-8",
-    })
-  );
-};
-
-module.exports = { allowAccessToExecutable };
-
-
-/***/ }),
-
-/***/ 7647:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const { promises } = __nccwpck_require__(7147);
-const path = __nccwpck_require__(1017);
-const { promisify } = __nccwpck_require__(3837);
-const fs = __nccwpck_require__(7147);
-const readdir = promisify(fs.readdir);
-const stat = promisify(fs.stat);
-
-const isEmptyDir = async (path) => {
-  try {
-    const directory = await promises.opendir(path);
-    const entry = await directory.read();
-    await directory.close();
-
-    return entry === null;
-  } catch (error) {
-    return false;
-  }
-};
-
-async function* getFiles(directory = ".") {
-  for (const file of await readdir(directory)) {
-    const fullPath = path.join(directory, file);
-    const stats = await stat(fullPath);
-
-    if (stats.isDirectory()) {
-      yield* getFiles(fullPath);
-    }
-
-    if (stats.isFile()) {
-      yield fullPath;
-    }
-  }
-}
-
-const moveFiles = async (oldFolder, newFolder) => {
-  let filePathsParsed = [];
-  let oldFilePaths = [];
-
-  for await (const filePath of getFiles(oldFolder)) {
-    try {
-      filePathsParsed.push(path.parse(filePath));
-      oldFilePaths.push(filePath);
-    } catch (e) {
-      console.error(e);
-    }
-  }
-
-  const newFilePaths = filePathsParsed.map((f) => {
-    const { root, base } = f;
-
-    return path.join(root, newFolder, base);
-  });
-
-  for (let i = 0; i < oldFilePaths.length; i++) {
-    fs.copyFileSync(oldFilePaths[i], newFilePaths[i]);
-  }
-};
-
-module.exports = { isEmptyDir, moveFiles, getFiles };
-
-
-/***/ }),
-
-/***/ 1505:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const { allowAccessToExecutable } = __nccwpck_require__(5549);
-const { isEmptyDir, moveFiles, getFiles } = __nccwpck_require__(7647);
-const { logger } = __nccwpck_require__(5928);
-
-module.exports = {
-  allowAccessToExecutable,
-  isEmptyDir,
-  moveFiles,
-  getFiles,
-  logger,
-};
-
-
-/***/ }),
-
-/***/ 5928:
-/***/ ((module) => {
-
-const logger = (log) => {
-  console.log(`${new Date().toISOString()} --- ${log}`);
-};
-
-module.exports = { logger };
-
-
-/***/ }),
-
 /***/ 7557:
 /***/ ((module) => {
 
@@ -76541,39 +76664,12 @@ module.exports = JSON.parse('[[[0,44],"disallowed_STD3_valid"],[[45,46],"valid"]
 /******/ 	if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = __dirname + "/";
 /******/ 	
 /************************************************************************/
-var __webpack_exports__ = {};
-// This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
-(() => {
-const { loadClients } = __nccwpck_require__(3077);
-const {
-  BUCKET_NAME: bucketName,
-  OLD_STATE_FOLDER: oldStateFolder,
-} = __nccwpck_require__(2095);
-const { main } = __nccwpck_require__(2748);
-const { getInput } = __nccwpck_require__(3722);
-const github = __nccwpck_require__(8408);
-
-const terraformDirPath = getInput("terraform_dir_path", { required: true });
-const toDestroy = getInput("to_destroy");
-const repoName = github.context.repo.repo;
-
-const { terraform: terraformClient, storage: cloudStorageClient } =
-  loadClients();
-
-const run = async () => {
-  await main(cloudStorageClient, terraformClient, {
-    repoName,
-    terraformDirPath,
-    bucketName,
-    oldStateFolder,
-    toDestroy,
-  });
-};
-
-run();
-
-})();
-
-module.exports = __webpack_exports__;
+/******/ 	
+/******/ 	// startup
+/******/ 	// Load entry module and return exports
+/******/ 	// This entry module is referenced by other modules so it can't be inlined
+/******/ 	var __webpack_exports__ = __nccwpck_require__(1086);
+/******/ 	module.exports = __webpack_exports__;
+/******/ 	
 /******/ })()
 ;

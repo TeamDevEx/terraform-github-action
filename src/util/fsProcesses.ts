@@ -1,11 +1,11 @@
-const { promises } = require("fs");
-const path = require("path");
-const { promisify } = require("util");
-const fs = require("fs");
+import { promises } from "fs";
+import path from "path";
+import { promisify } from "util";
+import fs from "fs";
 const readdir = promisify(fs.readdir);
 const stat = promisify(fs.stat);
 
-const isEmptyDir = async (path) => {
+const isEmptyDir = async (path: fs.PathLike) => {
   try {
     const directory = await promises.opendir(path);
     const entry = await directory.read();
@@ -17,7 +17,7 @@ const isEmptyDir = async (path) => {
   }
 };
 
-async function* getFiles(directory = ".") {
+async function* getFiles(directory = "."): AsyncGenerator<any, any, unknown> {
   for (const file of await readdir(directory)) {
     const fullPath = path.join(directory, file);
     const stats = await stat(fullPath);
@@ -32,7 +32,7 @@ async function* getFiles(directory = ".") {
   }
 }
 
-const moveFiles = async (oldFolder, newFolder) => {
+const moveFiles = async (oldFolder: string | undefined, newFolder: string) => {
   let filePathsParsed = [];
   let oldFilePaths = [];
 
@@ -56,4 +56,4 @@ const moveFiles = async (oldFolder, newFolder) => {
   }
 };
 
-module.exports = { isEmptyDir, moveFiles, getFiles };
+export { isEmptyDir, moveFiles, getFiles };

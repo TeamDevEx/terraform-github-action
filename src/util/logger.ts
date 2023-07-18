@@ -1,5 +1,5 @@
-const logger = (log) => {
+const logger = (log: any) => {
   console.log(`${new Date().toISOString()} --- ${log}`);
 };
 
-module.exports = { logger };
+export { logger };
