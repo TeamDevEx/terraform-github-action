@@ -75871,139 +75871,6 @@ module.exports = { BUCKET_NAME, OLD_STATE_FOLDER, terraformDirPath, repoName };
 
 /***/ }),
 
-/***/ 5534:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const {
-  uploadDirectory,
-  doesBucketExist,
-  createBucket,
-  downloadFolder,
-  deleteDirectory,
-} = __nccwpck_require__(1179);
-
-module.exports = {
-  uploadDirectory,
-  doesBucketExist,
-  createBucket,
-  downloadFolder,
-  deleteDirectory,
-};
-
-
-/***/ }),
-
-/***/ 1179:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const fs = __nccwpck_require__(7147);
-const path = __nccwpck_require__(1017);
-const { logger } = __nccwpck_require__(5928);
-const { getFiles } = __nccwpck_require__(7647);
-
-async function uploadDirectory(
-  cloudStorageClient,
-  { directoryPath, bucketName }
-) {
-  logger(`Uploading tf config state to cloud storge bucket`);
-  const bucketInstance = cloudStorageClient.bucket(bucketName);
-  let successfulUploads = 0;
-
-  for await (const filePath of getFiles(directoryPath)) {
-    try {
-      const dirName = path.dirname(directoryPath);
-      const destination = path.relative(dirName, filePath);
-
-      if (!(path.parse(filePath).ext === ".tf"))
-        await bucketInstance.upload(filePath, { destination });
-
-      logger(`Successfully uploaded: ${filePath}`);
-      successfulUploads++;
-    } catch (e) {
-      console.error(`Error uploading ${filePath}:`, e);
-    }
-  }
-
-  logger(`${successfulUploads} files uploaded to ${bucketName} successfully.`);
-}
-
-async function doesBucketExist(cloudStorageClient, { bucketName }) {
-  logger(`Checking if bucket exists`);
-  const [buckets] = await cloudStorageClient.getBuckets();
-
-  const isThereExistingBucket = buckets.find((bucket) => {
-    return bucketName === bucket.name;
-  });
-
-  return !!isThereExistingBucket;
-}
-
-async function createBucket(cloudStorageClient, { bucketName }) {
-  logger(`Creating bucket: ${bucketName}`);
-  const [bucket] = await cloudStorageClient.createBucket(bucketName, {
-    location: "US",
-    storageClass: "STANDARD",
-  });
-
-  logger(`Bucket ${bucket.name} created.`);
-}
-
-async function downloadFolder(cloudStorgae, { folderName, bucketName }) {
-  logger(
-    `Downloading folder for tf config states for this repository: ${folderName}`
-  );
-  const bucketInstance = cloudStorgae.bucket(bucketName);
-  const [files] = await bucketInstance.getFiles({ prefix: folderName });
-
-  for (const file of files) {
-    const dirPath = path.parse(file.name).dir.split("/");
-    dirPath[0] = "old-state";
-
-    const newDirPath = dirPath.join("/");
-    const newFilePath = newDirPath + "/" + path.basename(file.name);
-
-    if (!fs.existsSync(newDirPath))
-      fs.mkdirSync(newDirPath, { recursive: true });
-
-    await bucketInstance.file(file.name).download({
-      destination: path.join(newFilePath),
-    });
-
-    logger(`gs://${bucketName}/${file.name} downloaded to ${newFilePath}.`);
-  }
-}
-
-async function deleteDirectory(cloudStorageClient, { bucketName, folderName }) {
-  logger(`Deleting tf config state in cloud storge bucket: ${bucketName}`);
-  const bucketInstance = cloudStorageClient.bucket(bucketName);
-
-  const [files] = await bucketInstance.getFiles();
-
-  const dirFiles = files.filter((f) =>
-    f.metadata.id.includes(folderName + "/")
-  );
-
-  for (const dirFile of dirFiles) {
-    await dirFile.delete();
-    logger(`Deleted ${dirFile.name}`);
-  }
-
-  logger(
-    `Done with directory deletion for ${folderName} in cloud bucket ${bucketName}`
-  );
-}
-
-module.exports = {
-  uploadDirectory,
-  doesBucketExist,
-  createBucket,
-  downloadFolder,
-  deleteDirectory,
-};
-
-
-/***/ }),
-
 /***/ 3077:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -76036,7 +75903,7 @@ module.exports = { loadClients };
 
 /***/ }),
 
-/***/ 3371:
+/***/ 2748:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const {
@@ -76045,20 +75912,22 @@ const {
   createBucket,
   downloadFolder,
   deleteDirectory,
-} = __nccwpck_require__(5534);
+} = __nccwpck_require__(5153);
 const {
   allowAccessToExecutable,
   isEmptyDir,
   moveFiles,
   logger,
-} = __nccwpck_require__(1505);
+} = __nccwpck_require__(6810);
 const fs = __nccwpck_require__(7147);
 
-const createResourcesProcess = async (
+const main = async (
   cloudStorageClient,
   terraformClient,
-  { repoName, terraformDirPath, bucketName, oldStateFolder }
+  { repoName, terraformDirPath, bucketName, oldStateFolder, toDestroy }
 ) => {
+  const isDestroy = toDestroy === "true"; // what we get from getInput is not boolean it seems
+
   const isBucketExist = await doesBucketExist(cloudStorageClient, {
     bucketName,
   });
@@ -76096,20 +75965,28 @@ const createResourcesProcess = async (
   logger(`Done initializing terraform files...`);
 
   logger(`Running terraform plan...`);
-  const planResponse = await terraformClient.plan(whatFolderToUse, {
-    autoApprove: true,
-  });
+  const planResponse = !isDestroy
+    ? await terraformClient.plan(whatFolderToUse, {
+        autoApprove: true,
+      })
+    : await terraformClient.planDestroy(whatFolderToUse, {
+        autoApprove: true,
+      });
   console.log(planResponse);
   logger(`Done running terraform plan...`);
 
-  logger(`Running terraform apply...`);
-  const applyResponse = await terraformClient.apply(whatFolderToUse, {
-    autoApprove: true,
-  });
+  logger(`Running terraform ${!isDestroy ? "apply" : "destroy"}...`);
+  const applyResponse = !isDestroy
+    ? await terraformClient.apply(whatFolderToUse, {
+        autoApprove: true,
+      })
+    : await terraformClient.destroy(whatFolderToUse, {
+        autoApprove: true,
+      });
   console.log(applyResponse);
-  logger(`Done running terraform apply...`);
+  logger(`Done running terraform ${!isDestroy ? "apply" : "destroy"}...`);
 
-  if (!isOldStateEmpty)
+  if (!isOldStateEmpty && !isDestroy)
     fs.cpSync(oldStateFolder, repoName, { recursive: true });
 
   if (!isOldStateEmpty)
@@ -76118,94 +75995,14 @@ const createResourcesProcess = async (
       folderName: repoName,
     });
 
-  await uploadDirectory(cloudStorageClient, {
-    directoryPath: repoName,
-    bucketName,
-  });
+  if (!isDestroy)
+    await uploadDirectory(cloudStorageClient, {
+      directoryPath: repoName,
+      bucketName,
+    });
 };
 
-module.exports = { createResourcesProcess };
-
-
-/***/ }),
-
-/***/ 7703:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const { downloadFolder, deleteDirectory } = __nccwpck_require__(5534);
-const {
-  allowAccessToExecutable,
-  isEmptyDir,
-  moveFiles,
-  logger,
-} = __nccwpck_require__(1505);
-const fs = __nccwpck_require__(7147);
-
-const destroyProcess = async (
-  cloudStorageClient,
-  terraformClient,
-  { repoName, terraformDirPath, bucketName, oldStateFolder }
-) => {
-  logger(
-    `Making tempory folders for applying terraform resources based in existing terraform state in cloud storage`
-  );
-  if (!fs.existsSync(repoName)) fs.mkdirSync(repoName);
-  if (!fs.existsSync(oldStateFolder)) fs.mkdirSync(oldStateFolder);
-  logger(
-    `Done making tempory folders for applying terraform resources based in existing terraform state in cloud storage`
-  );
-
-  await downloadFolder(cloudStorageClient, {
-    folderName: repoName,
-    bucketName,
-  });
-
-  fs.cpSync(terraformDirPath, repoName, { recursive: true });
-
-  const isOldStateEmpty = await isEmptyDir(oldStateFolder);
-  logger(`Is the old-state directory empty: ${isOldStateEmpty}`);
-  const whatFolderToUse = isOldStateEmpty ? repoName : oldStateFolder;
-
-  logger(`Does old-state exists?: ${fs.existsSync(oldStateFolder)}`);
-
-  if (!isOldStateEmpty) await allowAccessToExecutable(oldStateFolder);
-
-  await moveFiles(terraformDirPath, oldStateFolder);
-
-  logger(`Initializing terraform files...`);
-  const initResponse = await terraformClient.init(whatFolderToUse);
-  console.log(initResponse);
-  logger(`Done initializing terraform files...`);
-
-  logger(`Running terraform plan...`);
-  const planResponse = await terraformClient.planDestroy(whatFolderToUse, {
-    autoApprove: true,
-  });
-  console.log(planResponse);
-  logger(`Done running terraform plan...`);
-
-  await terraformClient.destroy(whatFolderToUse, {
-    autoApprove: true,
-  });
-
-  await deleteDirectory(cloudStorageClient, {
-    bucketName,
-    folderName: repoName,
-  });
-};
-
-module.exports = { destroyProcess };
-
-
-/***/ }),
-
-/***/ 7359:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const { createResourcesProcess } = __nccwpck_require__(3371);
-const { destroyProcess } = __nccwpck_require__(7703);
-
-module.exports = { createResourcesProcess, destroyProcess };
+module.exports = { main };
 
 
 /***/ }),
@@ -76353,6 +76150,22 @@ const logger = (log) => {
 };
 
 module.exports = { logger };
+
+
+/***/ }),
+
+/***/ 5153:
+/***/ ((module) => {
+
+module.exports = eval("require")("../gcloud");
+
+
+/***/ }),
+
+/***/ 6810:
+/***/ ((module) => {
+
+module.exports = eval("require")("../util");
 
 
 /***/ }),
@@ -76615,8 +76428,11 @@ var __webpack_exports__ = {};
 // This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
 (() => {
 const { loadClients } = __nccwpck_require__(3077);
-const { createResourcesProcess, destroyProcess } = __nccwpck_require__(7359);
-const { BUCKET_NAME, OLD_STATE_FOLDER } = __nccwpck_require__(2095);
+const {
+  BUCKET_NAME: bucketName,
+  OLD_STATE_FOLDER: oldStateFolder,
+} = __nccwpck_require__(2095);
+const { main } = __nccwpck_require__(2748);
 const { getInput } = __nccwpck_require__(3722);
 const github = __nccwpck_require__(8408);
 
@@ -76628,21 +76444,13 @@ const { terraform: terraformClient, storage: cloudStorageClient } =
   loadClients();
 
 const run = async () => {
-  if (toDestroy === "true") {
-    await destroyProcess(cloudStorageClient, terraformClient, {
-      bucketName: BUCKET_NAME,
-      oldStateFolder: OLD_STATE_FOLDER,
-      terraformDirPath,
-      repoName,
-    });
-  } else {
-    await createResourcesProcess(cloudStorageClient, terraformClient, {
-      bucketName: BUCKET_NAME,
-      oldStateFolder: OLD_STATE_FOLDER,
-      terraformDirPath,
-      repoName,
-    });
-  }
+  await main(cloudStorageClient, terraformClient, {
+    repoName,
+    terraformDirPath,
+    bucketName,
+    oldStateFolder,
+    toDestroy,
+  });
 };
 
 run();
