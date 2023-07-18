@@ -1,34 +1,34 @@
-const { execSync } = require("child_process");
-const { logger } = require("../util/logger");
+import { execSync } from "child_process";
+import { logger } from "../util/logger";
 
 class Terraform {
   constructor() {}
 
-  init = (relativePath) => {
+  init = (relativePath: string) => {
     return execSync(`terraform -chdir=${relativePath} init`, {
       encoding: "utf-8",
     });
   };
 
-  plan = (relativePath) => {
+  plan = (relativePath: string) => {
     return execSync(`terraform -chdir=${relativePath} plan`, {
       encoding: "utf-8",
     });
   };
 
-  planDestroy = (relativePath) => {
+  planDestroy = (relativePath: string) => {
     return execSync(`terraform -chdir=${relativePath} plan -destroy`, {
       encoding: "utf-8",
     });
   };
 
-  apply = (relativePath) => {
+  apply = (relativePath: string) => {
     return execSync(`terraform -chdir=${relativePath} apply -auto-approve`, {
       encoding: "utf-8",
     });
   };
 
-  destroy = (relativePath) => {
+  destroy = (relativePath: string) => {
     logger("Deleting terraform resources");
     execSync(`terraform -chdir=${relativePath} apply -destroy -auto-approve`, {
       encoding: "utf-8",
@@ -37,4 +37,4 @@ class Terraform {
   };
 }
 
-module.exports = { Terraform };
+export { Terraform };

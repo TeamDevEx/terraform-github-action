@@ -1,33 +1,42 @@
-const {
+import {
   uploadDirectory,
   doesBucketExist,
   createBucket,
   downloadFolder,
   deleteDirectory,
-} = require("./gcloud");
-const {
-  allowAccessToExecutable,
-  isEmptyDir,
-  moveFiles,
-  logger,
-} = require("./util");
-const fs = require("fs");
+} from "./gcloud";
+import { allowAccessToExecutable, isEmptyDir, moveFiles, logger } from "./util";
+import fs from "fs";
+import { Terraform } from "./classes";
+import { Storage } from "@google-cloud/storage";
+
+interface ICommonMainArg {
+  repoName: string;
+  terraformDirPath: string;
+  bucketName: string;
+  oldStateFolder: string;
+  toDestroy: string;
+}
 
 const main = async (
-  cloudStorageClient,
-  terraformClient,
-  { repoName, terraformDirPath, bucketName, oldStateFolder, toDestroy }
+  cloudStorageClient: Storage,
+  terraformClient: Terraform,
+  {
+    repoName,
+    terraformDirPath,
+    bucketName,
+    oldStateFolder,
+    toDestroy,
+  }: ICommonMainArg
 ) => {
   const isDestroy = toDestroy === "true"; // what we get from getInput is not boolean it seems
 
-  const isBucketExist = await doesBucketExist(cloudStorageClient, {
-    bucketName,
-  });
+  const isBucketExist = await doesBucketExist(cloudStorageClient, bucketName);
 
   logger(
     `Making tempory folders for applying terraform resources based in existing terraform state in cloud storage`
   );
-  if (!isBucketExist) await createBucket(cloudStorageClient, { bucketName });
+  if (!isBucketExist) await createBucket(cloudStorageClient, bucketName);
   if (!fs.existsSync(repoName)) fs.mkdirSync(repoName);
   if (!fs.existsSync(oldStateFolder)) fs.mkdirSync(oldStateFolder);
   logger(
@@ -35,7 +44,7 @@ const main = async (
   );
 
   await downloadFolder(cloudStorageClient, {
-    folderName: repoName,
+    directoryPath: repoName,
     bucketName,
   });
 
@@ -52,29 +61,21 @@ const main = async (
   await moveFiles(terraformDirPath, oldStateFolder);
 
   logger(`Initializing terraform files...`);
-  const initResponse = await terraformClient.init(whatFolderToUse);
+  const initResponse = terraformClient.init(whatFolderToUse);
   console.log(initResponse);
   logger(`Done initializing terraform files...`);
 
   logger(`Running terraform plan...`);
   const planResponse = !isDestroy
-    ? await terraformClient.plan(whatFolderToUse, {
-        autoApprove: true,
-      })
-    : await terraformClient.planDestroy(whatFolderToUse, {
-        autoApprove: true,
-      });
+    ? terraformClient.plan(whatFolderToUse)
+    : terraformClient.planDestroy(whatFolderToUse);
   console.log(planResponse);
   logger(`Done running terraform plan...`);
 
   logger(`Running terraform ${!isDestroy ? "apply" : "destroy"}...`);
   const applyResponse = !isDestroy
-    ? await terraformClient.apply(whatFolderToUse, {
-        autoApprove: true,
-      })
-    : await terraformClient.destroy(whatFolderToUse, {
-        autoApprove: true,
-      });
+    ? terraformClient.apply(whatFolderToUse)
+    : terraformClient.destroy(whatFolderToUse);
   console.log(applyResponse);
   logger(`Done running terraform ${!isDestroy ? "apply" : "destroy"}...`);
 
@@ -84,7 +85,7 @@ const main = async (
   if (!isOldStateEmpty)
     await deleteDirectory(cloudStorageClient, {
       bucketName,
-      folderName: repoName,
+      directoryPath: repoName,
     });
 
   if (!isDestroy)
@@ -94,4 +95,4 @@ const main = async (
     });
 };
 
-module.exports = { main };
+export { main };

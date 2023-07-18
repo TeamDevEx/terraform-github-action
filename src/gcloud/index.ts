@@ -1,12 +1,12 @@
-const {
+import {
   uploadDirectory,
   doesBucketExist,
   createBucket,
   downloadFolder,
   deleteDirectory,
-} = require("./storage");
+} from "./storage";
 
-module.exports = {
+export {
   uploadDirectory,
   doesBucketExist,
   createBucket,

@@ -1,11 +1,17 @@
-const fs = require("fs");
-const path = require("path");
-const { logger } = require("../util/logger");
-const { getFiles } = require("../util/fsProcesses");
+import fs from "fs";
+import path from "path";
+import { logger } from "../util/logger";
+import { getFiles } from "../util/fsProcesses";
+import { Storage } from "@google-cloud/storage";
+
+interface ICommonCloudStorageArgs {
+  directoryPath: string;
+  bucketName: string;
+}
 
 async function uploadDirectory(
-  cloudStorageClient,
-  { directoryPath, bucketName }
+  cloudStorageClient: Storage,
+  { directoryPath, bucketName }: ICommonCloudStorageArgs
 ) {
   logger(`Uploading tf config state to cloud storge bucket`);
   const bucketInstance = cloudStorageClient.bucket(bucketName);
@@ -29,7 +35,10 @@ async function uploadDirectory(
   logger(`${successfulUploads} files uploaded to ${bucketName} successfully.`);
 }
 
-async function doesBucketExist(cloudStorageClient, { bucketName }) {
+async function doesBucketExist(
+  cloudStorageClient: Storage,
+  bucketName: string
+) {
   logger(`Checking if bucket exists`);
   const [buckets] = await cloudStorageClient.getBuckets();
 
@@ -40,7 +49,7 @@ async function doesBucketExist(cloudStorageClient, { bucketName }) {
   return !!isThereExistingBucket;
 }
 
-async function createBucket(cloudStorageClient, { bucketName }) {
+async function createBucket(cloudStorageClient: Storage, bucketName: string) {
   logger(`Creating bucket: ${bucketName}`);
   const [bucket] = await cloudStorageClient.createBucket(bucketName, {
     location: "US",
@@ -50,12 +59,15 @@ async function createBucket(cloudStorageClient, { bucketName }) {
   logger(`Bucket ${bucket.name} created.`);
 }
 
-async function downloadFolder(cloudStorgae, { folderName, bucketName }) {
+async function downloadFolder(
+  cloudStorageClient: Storage,
+  { directoryPath, bucketName }: ICommonCloudStorageArgs
+) {
   logger(
-    `Downloading folder for tf config states for this repository: ${folderName}`
+    `Downloading folder for tf config states for this repository: ${directoryPath}`
   );
-  const bucketInstance = cloudStorgae.bucket(bucketName);
-  const [files] = await bucketInstance.getFiles({ prefix: folderName });
+  const bucketInstance = cloudStorageClient.bucket(bucketName);
+  const [files] = await bucketInstance.getFiles({ prefix: directoryPath });
 
   for (const file of files) {
     const dirPath = path.parse(file.name).dir.split("/");
@@ -75,14 +87,17 @@ async function downloadFolder(cloudStorgae, { folderName, bucketName }) {
   }
 }
 
-async function deleteDirectory(cloudStorageClient, { bucketName, folderName }) {
+async function deleteDirectory(
+  cloudStorageClient: Storage,
+  { bucketName, directoryPath }: ICommonCloudStorageArgs
+) {
   logger(`Deleting tf config state in cloud storge bucket: ${bucketName}`);
   const bucketInstance = cloudStorageClient.bucket(bucketName);
 
   const [files] = await bucketInstance.getFiles();
 
   const dirFiles = files.filter((f) =>
-    f.metadata.id.includes(folderName + "/")
+    f.metadata.id.includes(directoryPath + "/")
   );
 
   for (const dirFile of dirFiles) {
@@ -91,11 +106,11 @@ async function deleteDirectory(cloudStorageClient, { bucketName, folderName }) {
   }
 
   logger(
-    `Done with directory deletion for ${folderName} in cloud bucket ${bucketName}`
+    `Done with directory deletion for ${directoryPath} in cloud bucket ${bucketName}`
   );
 }
 
-module.exports = {
+export {
   uploadDirectory,
   doesBucketExist,
   createBucket,
