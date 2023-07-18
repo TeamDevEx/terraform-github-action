@@ -4,20 +4,22 @@ const {
   createBucket,
   downloadFolder,
   deleteDirectory,
-} = require("../gcloud");
+} = require("./gcloud");
 const {
   allowAccessToExecutable,
   isEmptyDir,
   moveFiles,
   logger,
-} = require("../util");
+} = require("./util");
 const fs = require("fs");
 
-const createResourcesProcess = async (
+const main = async (
   cloudStorageClient,
   terraformClient,
-  { repoName, terraformDirPath, bucketName, oldStateFolder }
+  { repoName, terraformDirPath, bucketName, oldStateFolder, toDestroy }
 ) => {
+  const isDestroy = toDestroy === "true"; // what we get from getInput is not boolean it seems
+
   const isBucketExist = await doesBucketExist(cloudStorageClient, {
     bucketName,
   });
@@ -55,20 +57,28 @@ const createResourcesProcess = async (
   logger(`Done initializing terraform files...`);
 
   logger(`Running terraform plan...`);
-  const planResponse = await terraformClient.plan(whatFolderToUse, {
-    autoApprove: true,
-  });
+  const planResponse = !isDestroy
+    ? await terraformClient.plan(whatFolderToUse, {
+        autoApprove: true,
+      })
+    : await terraformClient.planDestroy(whatFolderToUse, {
+        autoApprove: true,
+      });
   console.log(planResponse);
   logger(`Done running terraform plan...`);
 
-  logger(`Running terraform apply...`);
-  const applyResponse = await terraformClient.apply(whatFolderToUse, {
-    autoApprove: true,
-  });
+  logger(`Running terraform ${!isDestroy ? "apply" : "destroy"}...`);
+  const applyResponse = !isDestroy
+    ? await terraformClient.apply(whatFolderToUse, {
+        autoApprove: true,
+      })
+    : await terraformClient.destroy(whatFolderToUse, {
+        autoApprove: true,
+      });
   console.log(applyResponse);
-  logger(`Done running terraform apply...`);
+  logger(`Done running terraform ${!isDestroy ? "apply" : "destroy"}...`);
 
-  if (!isOldStateEmpty)
+  if (!isOldStateEmpty && !isDestroy)
     fs.cpSync(oldStateFolder, repoName, { recursive: true });
 
   if (!isOldStateEmpty)
@@ -77,10 +87,11 @@ const createResourcesProcess = async (
       folderName: repoName,
     });
 
-  await uploadDirectory(cloudStorageClient, {
-    directoryPath: repoName,
-    bucketName,
-  });
+  if (!isDestroy)
+    await uploadDirectory(cloudStorageClient, {
+      directoryPath: repoName,
+      bucketName,
+    });
 };
 
-module.exports = { createResourcesProcess };
+module.exports = { main };

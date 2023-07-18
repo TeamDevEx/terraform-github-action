@@ -1,6 +1,9 @@
 const { loadClients } = require("./load-dependencies");
-const { createResourcesProcess, destroyProcess } = require("./proceses");
-const { BUCKET_NAME, OLD_STATE_FOLDER } = require("./constant");
+const {
+  BUCKET_NAME: bucketName,
+  OLD_STATE_FOLDER: oldStateFolder,
+} = require("./constant");
+const { main } = require("./main");
 const { getInput } = require("@actions/core");
 const github = require("@actions/github");
 
@@ -12,21 +15,13 @@ const { terraform: terraformClient, storage: cloudStorageClient } =
   loadClients();
 
 const run = async () => {
-  if (toDestroy === "true") {
-    await destroyProcess(cloudStorageClient, terraformClient, {
-      bucketName: BUCKET_NAME,
-      oldStateFolder: OLD_STATE_FOLDER,
-      terraformDirPath,
-      repoName,
-    });
-  } else {
-    await createResourcesProcess(cloudStorageClient, terraformClient, {
-      bucketName: BUCKET_NAME,
-      oldStateFolder: OLD_STATE_FOLDER,
-      terraformDirPath,
-      repoName,
-    });
-  }
+  await main(cloudStorageClient, terraformClient, {
+    repoName,
+    terraformDirPath,
+    bucketName,
+    oldStateFolder,
+    toDestroy,
+  });
 };
 
 run();
