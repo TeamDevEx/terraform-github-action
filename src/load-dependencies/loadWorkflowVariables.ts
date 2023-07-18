@@ -1,5 +1,5 @@
 import { getInput } from "@actions/core";
-import github from "@actions/github";
+import * as github from "@actions/github";
 
 const loadWorkflowVariables = () => {
   const terraformDirPath = getInput("terraform_dir_path", { required: true });
