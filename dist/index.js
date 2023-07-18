@@ -76051,7 +76051,7 @@ const {
   isEmptyDir,
   moveFiles,
   logger,
-} = __nccwpck_require__(6810);
+} = __nccwpck_require__(1505);
 const fs = __nccwpck_require__(7147);
 
 const main = async (
@@ -76283,14 +76283,6 @@ const logger = (log) => {
 };
 
 module.exports = { logger };
-
-
-/***/ }),
-
-/***/ 6810:
-/***/ ((module) => {
-
-module.exports = eval("require")("../util");
 
 
 /***/ }),

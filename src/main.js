@@ -10,7 +10,7 @@ const {
   isEmptyDir,
   moveFiles,
   logger,
-} = require("../util");
+} = require("./util");
 const fs = require("fs");
 
 const main = async (
