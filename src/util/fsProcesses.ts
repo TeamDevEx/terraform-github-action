@@ -33,8 +33,8 @@ async function* getFiles(directory = "."): AsyncGenerator<any, any, unknown> {
 }
 
 const moveFiles = async (oldFolder: string | undefined, newFolder: string) => {
-  let filePathsParsed = [];
-  let oldFilePaths = [];
+  let filePathsParsed: path.ParsedPath[] = [];
+  let oldFilePaths: string[] = [];
 
   for await (const filePath of getFiles(oldFolder)) {
     try {

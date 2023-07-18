@@ -3,9 +3,9 @@ import { getFiles } from "./fsProcesses";
 import { logger } from "./logger";
 
 const getProviderToUse = async (pathToExectuable: string) => {
-  let providerToUse;
+  let providerToUse: string | undefined;
   let architecture = process.arch.split("");
-  let machineArchitectures = [];
+  let machineArchitectures: string[] = [];
 
   architecture.shift();
 
